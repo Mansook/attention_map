@@ -1,0 +1,19 @@
+explainer_dict:
+  cam:
+    class: CAM
+    description: "Class Activation Mapping"
+    model:
+      ResNet18: "layer4"
+    default_target_layer: "layer4"
+  grad_cam:
+    class: GradCAM
+    description: "Gradient-weighted Class Activation Mapping"
+    model:
+      ResNet18:
+        target_layer: "layer4"
+    default_target_layer: "layer4"
+  # 필요시 추가 explainer
+  # my_custom_xai:
+  #   class: MyCustomXAI
+  #   description: "설명 추가"
+  #   default_target_layer: "layer3"

@@ -1,0 +1,35 @@
+name: "humanVSai"
+root: "../data/humanVSai"
+batch_size: 64
+num_workers: 2
+download: false
+samples_per_class: null
+num_classes: 2
+
+
+transform:
+  img_size: [96,96]
+  normalize:
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+
+# 클래스 이름은 ImageFolder가 자동으로 폴더명 기준으로 할당합니다.
+# 필요하다면 아래처럼 명시적으로 적어줄 수도 있습니다.
+classes:
+  - "ai"
+  - "real"
+
+# 모델 설정
+models:
+  ResNet18:
+    name: "ResNet18"
+    weights: true
+    conv1:
+      kernel_size: 7
+      stride: 2
+      padding: 3
+      bias: false
+    maxpool: "default"
+# 기본 모델 선택 (여러 모델 중 하나 선택)
+default_model: "ResNet18"
+

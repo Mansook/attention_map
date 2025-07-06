@@ -1,0 +1,100 @@
+import torch
+import torch.nn.functional as F
+import torch.nn as nn
+import numpy as np
+
+
+class CAM(nn.Module):
+    def __init__(self, model, target_layer_name="layer4"):
+        """
+        CAM (Class Activation Mapping) 초기화
+        
+        Args:
+            model: 분석할 모델 (ResNetClassifier 등)
+            target_layer_name: CAM을 생성할 타겟 레이어 이름
+                              기본값은 "layer4" (ResNet의 마지막 컨볼루션 레이어)
+        """
+        super(CAM, self).__init__()
+        self.model = model.eval()
+        
+        # 타겟 레이어의 이름을 저장
+        self.target_layer_name = target_layer_name
+    
+        # 타겟 레이어의 출력을 저장할 변수 초기화
+        self.feature_maps = None
+        
+        # 타겟 레이어에 훅을 등록하여 출력을 캡처
+        self._register_hook()
+    
+    def _register_hook(self):
+        """타겟 레이어에 훅을 등록하여 feature map을 캡처"""
+        def forward_hook(module, input, output):
+            self.feature_maps = output
+        
+        # ResNet의 backbone에서 타겟 레이어를 찾아서 훅 등록
+        target_layer = dict([*self.model.backbone.named_modules()])[self.target_layer_name]
+
+        target_layer.register_forward_hook(forward_hook)
+    
+    def forward(self, x):
+        """모델의 forward pass (훅 실행을 위해 필요)"""
+        return self.model(x)
+        
+    def generate(self, input_tensor, class_idx=None):
+        """
+        CAM 맵 생성
+
+        Args:
+            input_tensor: 입력 텐서 (예: 이미지) [3, H, W] 또는 [1, 3, H, W] (무조건 단일 이미지만 지원)
+            class_idx: 특정 클래스의 CAM 맵 생성 (기본값: None, 예측된 클래스 사용)
+
+        Returns:
+            cam: CAM 히트맵 [H, W]
+        """
+        with torch.no_grad():
+           
+            # 모델 forward pass (훅이 실행되어 feature_maps가 저장됨)
+            output = self.model(input_tensor)
+ 
+            # class_idx가 None이면 예측된 클래스 사용
+            if class_idx is None:
+                class_idx = torch.argmax(output, dim=1).item()
+
+            # FC 레이어의 가중치 가져오기
+            fc_weights = self.model.backbone.fc.weight  # ResNet의 fc 레이어
+            target_weight = fc_weights[class_idx]  # 해당 클래스의 가중치
+            # feature_maps가 None인지 확인
+            if self.feature_maps is None:
+                raise RuntimeError("feature_maps가 None입니다. 훅이 제대로 등록되었는지 확인하세요.")
+            
+            # feature map에서 배치 차원 제거
+            feature_map = self.feature_maps.squeeze(0)  # [C, H, W]
+            
+            # CAM 계산: feature map과 가중치의 가중합
+            cam = torch.zeros(feature_map.shape[1], feature_map.shape[2], device=input_tensor.device)
+            for i, weight in enumerate(target_weight):
+                cam += weight * feature_map[i]
+            
+            # ReLU 적용 (음수 값 제거)
+            cam = F.relu(cam)
+            
+            # 원본 이미지 크기로 리사이즈
+            cam = F.interpolate(
+                cam.unsqueeze(0).unsqueeze(0),
+                size=(input_tensor.shape[2], input_tensor.shape[3]),
+                mode='bicubic',  # bilinear 대신 bicubic
+                align_corners=False
+            )
+            
+            # CPU로 이동하고 numpy로 변환
+            cam = cam.squeeze().cpu().numpy()
+            
+            # ReLU 이후 값 분포 확인 및 대비 향상 정규화
+            cam = np.maximum(cam, 0)
+            if cam.max() > 0:
+                vmax = np.percentile(cam, 99)
+                vmin = np.percentile(cam, 1)
+                cam = np.clip((cam - vmin) / (vmax - vmin + 1e-8), 0, 1)
+            return cam
+            
+                
