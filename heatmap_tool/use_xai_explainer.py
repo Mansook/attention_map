@@ -2,10 +2,11 @@ import torch
 import argparse
 import os
 import yaml
-from explainers import CAM, GradCAM
+from explainers import CAM, GradCAM,RISE
 from models import ResNetClassifier
 from dataset.datasetLoader import get_dataloaders
 from utils.visualization import visualize_xai
+
 import random
 import numpy as np
 
@@ -48,6 +49,9 @@ def main():
     train_loader, val_loader, test_loader = get_dataloaders(dataset_config)
     class_names = dataset_config.get('classes', None)
 
+    # 입력 사이즈 추출
+    input_size = tuple(dataset_config['transform']['img_size'])
+
     # 3. 모델 생성 및 가중치 로드
     model_structure = config['model_structure']
     num_classes = config['num_classes']
@@ -55,7 +59,7 @@ def main():
     checkpoint_path = config['checkpoint_path']
     # yaml 기준으로 실제 경로 변환
     checkpoint_path = resolve_path_from_project_root(checkpoint_path)
-    # 모델 생성 (예시: ResNetClassifier만 지원)
+    
     if model_name.lower() == "resnet18":
         print("model_structure from yaml:", model_structure)
         model = ResNetClassifier(num_classes=num_classes, dataset_config=model_structure)
@@ -80,14 +84,12 @@ def main():
         print(f"지원하지 않는 explainer: {args.explainer}")
         return
     explainer_class = eval(explainer_dict[explainer_key]['class'])  # CAM, GradCAM 등
-    
-    # 모델별 target layer 설정이 있는지 확인
-    if 'model' in explainer_dict[explainer_key] and model_name in explainer_dict[explainer_key]['model']:
-        target_layer = explainer_dict[explainer_key]['model'][model_name]['target_layer']
-    else:
-        target_layer = explainer_dict[explainer_key]['default_target_layer']
    
-    explainer = explainer_class(model, target_layer_name=target_layer)
+    
+    explainer_config = explainer_dict[explainer_key]['model']
+    explainer_config['input_size'] = input_size  # 딕셔너리에 input_size 추가
+
+    explainer = explainer_class(model, explainer_config)
 
     # 5. 설명 실행 (test_loader 기준)
     if test_loader is None:

@@ -12,6 +12,15 @@ explainer_dict:
       ResNet18:
         target_layer: "layer4"
     default_target_layer: "layer4"
+  rise:
+    class: RISE
+    description: "Randomized Input Sampling with Expectation"
+    model:
+      ResNet18:
+        N: 4000
+        s: 8
+        p1: 0.1
+
   # 필요시 추가 explainer
   # my_custom_xai:
   #   class: MyCustomXAI

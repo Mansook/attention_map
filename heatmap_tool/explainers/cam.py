@@ -5,20 +5,20 @@ import numpy as np
 
 
 class CAM(nn.Module):
-    def __init__(self, model, target_layer_name="layer4"):
+    def __init__(self, model, config_dict):
         """
         CAM (Class Activation Mapping) 초기화
         
         Args:
             model: 분석할 모델 (ResNetClassifier 등)
-            target_layer_name: CAM을 생성할 타겟 레이어 이름
-                              기본값은 "layer4" (ResNet의 마지막 컨볼루션 레이어)
+            config_dict: 설정 딕셔너리 (target_layer_name, input_size 등 포함)
         """
         super(CAM, self).__init__()
         self.model = model.eval()
         
-        # 타겟 레이어의 이름을 저장
-        self.target_layer_name = target_layer_name
+        # config_dict에서 설정 가져오기
+        self.target_layer_name = config_dict.get('target_layer', 'layer4')
+        self.input_size = config_dict.get('input_size', (96, 96))
     
         # 타겟 레이어의 출력을 저장할 변수 초기화
         self.feature_maps = None

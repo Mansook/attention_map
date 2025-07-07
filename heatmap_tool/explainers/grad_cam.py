@@ -3,10 +3,14 @@ import torch.nn.functional as F
 import torch.nn as nn
 
 class GradCAM(nn.Module):
-    def __init__(self, model, target_layer_name="layer4"):
+    def __init__(self, model, config_dict):
         super(GradCAM, self).__init__()
         self.model = model.eval()
-        self.target_layer_name = target_layer_name
+        
+        # config_dict에서 설정 가져오기
+        self.target_layer_name = config_dict.get('target_layer', 'layer4')
+        self.input_size = config_dict.get('input_size', (96, 96))
+        
         self.feature_maps = None
         self.gradients = None
         self._register_hook()
