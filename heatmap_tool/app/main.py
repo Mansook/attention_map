@@ -5,14 +5,15 @@ import yaml
 import torch
 import numpy as np
 from PIL import Image, ImageQt
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QFileDialog, QMessageBox)
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QFileDialog, QMessageBox, QToolTip)
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QCursor
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5 import uic
 from PIL import ImageOps
+from utils.explainer_add_dialog import ExplainerAddDialog  # 다이얼로그는 utils에 구현한다고 가정
 
 # 상위 디렉토리 모듈들 import
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -41,6 +42,14 @@ class XAIGUI(QMainWindow):
         self.runXaiBtn.clicked.connect(self.run_xai)
         self.targetClassCombo.setEnabled(False)
         self.runXaiBtn.setEnabled(False)
+        # Explainer 관리 버튼 바인딩
+        self.addExplainerBtn.clicked.connect(self.open_add_explainer_dialog)
+        self.removeExplainerBtn.clicked.connect(self.remove_selected_explainer)
+        # 리스트에서 더블클릭 시 삭제
+        self.explainerListWidget.itemDoubleClicked.connect(self.remove_selected_explainer)
+        # Hover 이벤트 활성화
+        self.explainerListWidget.setMouseTracking(True)
+        self.explainerListWidget.itemEntered.connect(self.show_explainer_info_tooltip)
 
     def load_checkpoint(self):
         default_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "configs", "checkpoints")
@@ -110,17 +119,80 @@ class XAIGUI(QMainWindow):
             for name, config in explainer_dict.items():
                 explainer_class = eval(config['class'])
                 explainer_params = config['model'].get(self.config['model'], {})
+                # 문자열이면 임의의 key로 변환 (예: 'param')
                 if isinstance(explainer_params, str):
-                    explainer_params = {'target_layer': explainer_params}
-                if isinstance(explainer_params, dict):
-                    # input_size가 str이어야 한다면 str로 변환해서 할당
-                    if isinstance(explainer_params.get('input_size', None), str):
-                        explainer_params['input_size'] = str(input_size)
-            
+                    explainer_params = {'param': explainer_params}
+                elif isinstance(explainer_params, dict):
+                    explainer_params = explainer_params.copy()
+                else:
+                    explainer_params = {}
+                # input_size가 필요한 경우만 할당
+                if 'input_size' in explainer_params:
+                    explainer_params['input_size'] = str(input_size)
                 self.explainers[name] = explainer_class(self.model, explainer_params)
                 self.infoText.append(f"Explainer 설정 완료: {name}")
+            self.update_explainer_list()
         except Exception as e:
             raise Exception(f"Explainer 설정 실패: {str(e)}")
+
+    def open_add_explainer_dialog(self):
+        # explainer_config.yaml 로드
+        config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "explainer_config.yaml")
+        with open(config_path, 'r', encoding='utf-8') as f:
+            explainer_config = yaml.safe_load(f)
+        if self.config and 'model' in self.config:
+            dialog = ExplainerAddDialog(explainer_config, self.config['model'], self)
+        if dialog.exec_():
+            explainer_name, params = dialog.get_explainer_info()
+            # 파라미터 타입 변환
+            for k, v in params.items():
+                try:
+                    params[k] = eval(v)
+                except:
+                    pass
+            explainer_class = eval(explainer_config['explainer_dict'][explainer_name]['class'])
+            # ---------- 중복 이름 처리 ----------
+            base_name = explainer_name
+            idx = 0
+            while True:
+                name = base_name if idx == 0 else f"{base_name}{idx}"
+                if name not in self.explainers:
+                    break
+                idx += 1
+            self.explainers[name] = explainer_class(self.model, params)
+            self.update_explainer_list()
+            self.infoText.append(f"Explainer 추가: {name}")
+
+    def update_explainer_list(self):
+        self.explainerListWidget.clear()
+        for name, explainer in self.explainers.items():
+            self.explainerListWidget.addItem(name)
+        # Hover 이벤트 연결 (setMouseTracking 필요)
+        self.explainerListWidget.setMouseTracking(True)
+        self.explainerListWidget.itemEntered.connect(self.show_explainer_info_tooltip)
+
+    def show_explainer_info_tooltip(self, item):
+        name = item.text()
+        explainer = self.explainers.get(name)
+        if explainer is not None:
+            # get_config_dict가 있으면 정보 표시
+            if hasattr(explainer, "get_config_dict"):
+                info = explainer.get_config_dict()
+                msg = "\n".join([f"{k}: {v}" for k, v in info.items()])
+            else:
+                msg = str(explainer)
+            QToolTip.showText(QCursor.pos(), msg, self.explainerListWidget)
+
+    def remove_selected_explainer(self, item=None):
+        # 리스트에서 선택된 explainer 삭제
+        if item is None:
+            item = self.explainerListWidget.currentItem()
+        if item:
+            name = item.text()
+            if name in self.explainers:
+                del self.explainers[name]
+                self.update_explainer_list()
+                self.infoText.append(f"Explainer 삭제: {name}")
 
     def load_image(self):
         if self.model is None:

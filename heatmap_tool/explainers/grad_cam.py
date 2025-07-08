@@ -67,3 +67,8 @@ class GradCAM(nn.Module):
             cam = cam / cam.max()
             
         return cam
+    def set_config_dict(self, config_dict):
+        self.target_layer_name = config_dict.get('target_layer', self.target_layer_name)
+        self.input_size = config_dict.get('input_size', self.input_size)
+        # target_layer_name이 바뀌면 훅 재등록 필요
+        self._register_hook()

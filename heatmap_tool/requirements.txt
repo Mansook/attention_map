@@ -6,3 +6,4 @@ opencv-python>=4.5.0
 Pillow>=8.0.0
 PyYAML>=6.0 
 kagglehub
+PyQt5>=5.15.0

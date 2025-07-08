@@ -54,3 +54,9 @@ class RISE:
         saliency = torch.sum(scores.view(-1, 1, 1) * self.masks, dim=0)
         saliency = saliency / saliency.max()
         return saliency.detach().cpu()
+    def set_config_dict(self, config_dict):
+        self.N = config_dict.get('N', self.N)
+        self.s = config_dict.get('s', self.s)
+        self.p1 = config_dict.get('p1', self.p1)
+        self.input_size = config_dict.get('input_size', self.input_size)
+        self.masks = self.generate_masks()

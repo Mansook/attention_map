@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import torch
 import argparse
 import os
@@ -9,6 +10,11 @@ from utils.visualization import visualize_xai
 
 import random
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
+from utils.set_korean import setup_korean_font
+# 한글 폰트 설정
+
 
 def load_checkpoint_yaml(checkpoint_path):
     with open(checkpoint_path, 'r', encoding='utf-8') as f:
@@ -112,8 +118,7 @@ def main():
         predicted_classes = torch.argmax(output, dim=1)  # [batch_size]
         confidences = torch.softmax(output, dim=1).max(dim=1).values  # [batch_size]
 
-    import matplotlib.pyplot as plt
-    import numpy as np
+    # matplotlib은 이미 상단에서 import됨
 
     for idx, i in enumerate(rand_indices):
         pred = predicted_classes[i].item()
@@ -158,4 +163,6 @@ def main():
 
 
 if __name__ == "__main__":
+    # 한글 폰트 설정 실행
+    setup_korean_font()
     main() 

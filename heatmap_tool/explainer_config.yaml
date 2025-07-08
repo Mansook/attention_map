@@ -3,8 +3,7 @@ explainer_dict:
     class: CAM
     description: "Class Activation Mapping"
     model:
-      ResNet18: "layer4"
-    default_target_layer: "layer4"
+      ResNet18: 
   grad_cam:
     class: GradCAM
     description: "Gradient-weighted Class Activation Mapping"
@@ -12,6 +11,7 @@ explainer_dict:
       ResNet18:
         target_layer: "layer4"
     default_target_layer: "layer4"
+    
   rise:
     class: RISE
     description: "Randomized Input Sampling with Expectation"
