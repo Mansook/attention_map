@@ -18,7 +18,7 @@ class CAM(nn.Module):
         
         # config_dict에서 설정 가져오기
         self.target_layer_name = config_dict.get('target_layer', 'layer4')
-        self.input_size = config_dict.get('input_size', (96, 96))
+        self.input_size = tuple(config_dict.get('input_size', (96, 96)))
     
         # 타겟 레이어의 출력을 저장할 변수 초기화
         self.feature_maps = None

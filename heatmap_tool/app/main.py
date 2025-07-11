@@ -14,6 +14,7 @@ from matplotlib.figure import Figure
 from PyQt5 import uic
 from PIL import ImageOps
 from utils.explainer_add_dialog import ExplainerAddDialog  # 다이얼로그는 utils에 구현한다고 가정
+import re
 
 # 상위 디렉토리 모듈들 import
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,6 +23,7 @@ from models import ResNetClassifier
 from dataset.datasetLoader import get_dataloaders
 from utils.set_korean import setup_korean_font
 from utils.xaiworker import XAIWorker
+from utils.explainer_tooltip import make_explainer_tooltip
 
 class XAIGUI(QMainWindow):
     def __init__(self):
@@ -31,10 +33,16 @@ class XAIGUI(QMainWindow):
         self.model = None
         self.config = None
         self.explainers = {}
+        self.explainer_dict = {}
         self.current_image = None
         self.current_image_tensor = None
         self.heatmap_results = {}
         self._bind_widgets()
+        
+        self.current_explainees = {}
+        
+        
+        self.resize(1800, 1200)  # 또는 원하는 크기로 조정
 
     def _bind_widgets(self):
         self.loadCheckpointBtn.clicked.connect(self.load_checkpoint)
@@ -112,23 +120,14 @@ class XAIGUI(QMainWindow):
             config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "explainer_config.yaml")
             with open(config_path, 'r', encoding='utf-8') as f:
                 explainer_config = yaml.safe_load(f)
-            explainer_dict = explainer_config['explainer_dict']
+            self.explainer_dict = explainer_config['explainer_dict']
             if self.config is None:
                 raise ValueError("설정이 로드되지 않았습니다.")
             input_size = tuple(self.config['dataset_config']['transform']['img_size'])
-            for name, config in explainer_dict.items():
+            for name, config in self.explainer_dict.items():
                 explainer_class = eval(config['class'])
                 explainer_params = config['model'].get(self.config['model'], {})
-                # 문자열이면 임의의 key로 변환 (예: 'param')
-                if isinstance(explainer_params, str):
-                    explainer_params = {'param': explainer_params}
-                elif isinstance(explainer_params, dict):
-                    explainer_params = explainer_params.copy()
-                else:
-                    explainer_params = {}
-                # input_size가 필요한 경우만 할당
-                if 'input_size' in explainer_params:
-                    explainer_params['input_size'] = str(input_size)
+                explainer_params['input_size'] = input_size
                 self.explainers[name] = explainer_class(self.model, explainer_params)
                 self.infoText.append(f"Explainer 설정 완료: {name}")
             self.update_explainer_list()
@@ -173,15 +172,13 @@ class XAIGUI(QMainWindow):
 
     def show_explainer_info_tooltip(self, item):
         name = item.text()
-        explainer = self.explainers.get(name)
-        if explainer is not None:
-            # get_config_dict가 있으면 정보 표시
-            if hasattr(explainer, "get_config_dict"):
-                info = explainer.get_config_dict()
-                msg = "\n".join([f"{k}: {v}" for k, v in info.items()])
-            else:
-                msg = str(explainer)
-            QToolTip.showText(QCursor.pos(), msg, self.explainerListWidget)
+        msg = make_explainer_tooltip(
+            name,
+            self.explainer_dict,
+            self.config,
+            self.current_image_tensor
+        )
+        QToolTip.showText(QCursor.pos(), msg, self.explainerListWidget)
 
     def remove_selected_explainer(self, item=None):
         # 리스트에서 선택된 explainer 삭제
@@ -224,6 +221,7 @@ class XAIGUI(QMainWindow):
                 print("img_tensor size : ", img_tensor.shape)
                 self.imageLabel.setText(f"로드됨: {os.path.basename(file_path)}")
                 self.infoText.append(f"이미지 로드 완료: {img_tensor.shape}")
+                self.current_explainees = {}
                 self.setup_target_classes()
                 self.runXaiBtn.setEnabled(True)
             except Exception as e:
@@ -245,24 +243,51 @@ class XAIGUI(QMainWindow):
             self.targetClassCombo.addItem(class_name, i)
         self.targetClassCombo.setCurrentIndex(int(predicted_class))
         self.targetClassCombo.setEnabled(True)
+        self.current_explainees = {}
 
     def run_xai(self):
         if self.current_image_tensor is None:
             QMessageBox.warning(self, "경고", "먼저 이미지를 로드해주세요.")
             return
         target_class = self.targetClassCombo.currentData()
-        self.worker = XAIWorker(
-            self.model, self.explainers, 
-            self.current_image_tensor, target_class
-        )
-        self.worker.progress.connect(self.progressBar.setValue)
-        self.worker.finished.connect(self.on_xai_finished)
-        self.worker.error.connect(self.on_xai_error)
-        self.runXaiBtn.setEnabled(False)
-        self.worker.start()
+        
+        # 이미 계산된 explainer는 제외
+        explainers_to_run = {}
+        for name, explainer in self.explainers.items():
+            if not hasattr(self, 'current_explainees'):
+                self.current_explainees = {}
+            if name not in self.current_explainees:
+                explainers_to_run[name] = explainer
 
-    def on_xai_finished(self, results):
-        self.heatmap_results = results
+        # 이미 계산된 heatmap은 바로 결과에 추가
+        results = {}
+        for name in self.current_explainees:
+            results[name] = self.current_explainees[name]
+
+        # 새로 계산할 explainer가 있으면 worker 실행
+        if explainers_to_run:
+            self.worker = XAIWorker(
+                self.model, explainers_to_run,
+                self.current_image_tensor, target_class
+            )
+            self.worker.progress.connect(self.progressBar.setValue)
+            self.worker.finished.connect(lambda new_results: self.on_xai_finished_with_cache(new_results, results))
+            self.worker.error.connect(self.on_xai_error)
+            self.runXaiBtn.setEnabled(False)
+            self.worker.start()
+        else:
+            # 모두 캐시된 경우 바로 plot
+            self.heatmap_results = results
+            self.visualize_results()
+
+    def on_xai_finished_with_cache(self, new_results, cached_results):
+        # 새로 계산된 결과를 캐시에 추가
+        if not hasattr(self, 'current_explainees'):
+            self.current_explainees = {}
+        self.current_explainees.update(new_results)
+        # 전체 결과 합치기
+        all_results = {**cached_results, **new_results}
+        self.heatmap_results = all_results
         self.runXaiBtn.setEnabled(True)
         self.progressBar.setValue(0)
         self.visualize_results()
@@ -284,10 +309,23 @@ class XAIGUI(QMainWindow):
             return
         if self.current_image_tensor is None:
             return  # 이미지가 없으면 함수 종료
+        # 예시: mean, std 값 (dataset config에서 확인)
+        if self.config is not None:
+            normalize = self.config['dataset_config']['transform']['normalize']
+            mean = normalize['mean']
+            std = normalize['std']
+        else:
+            mean = [0.485, 0.456, 0.406]  # 예시 (ImageNet)
+            std = [0.229, 0.224, 0.225]   # 예시 (ImageNet)
+
+        # 텐서 → numpy 변환
         img_array = self.current_image_tensor.squeeze().permute(1, 2, 0).cpu().numpy()
-        num_explainers = len(self.heatmap_results)
-        cols = min(3, num_explainers + 1)
-        rows = (num_explainers + 1 + cols - 1) // cols
+
+        # 역정규화
+        img_array = img_array * std + mean
+        img_array = np.clip(img_array, 0, 1)  # 값 범위 0~1로 제한
+
+        # 시각화
         fig_orig = Figure(figsize=(4, 4))
         ax_orig = fig_orig.add_subplot(111)
         ax_orig.imshow(img_array)
@@ -295,13 +333,27 @@ class XAIGUI(QMainWindow):
         ax_orig.axis('off')
         canvas_orig = FigureCanvas(fig_orig)
         self.vizLayout.addWidget(canvas_orig, 0, 0)
+        num_explainers = len(self.heatmap_results)
+        cols = min(3, num_explainers + 1)
+        rows = (num_explainers + 1 + cols - 1) // cols
         for i, (name, heatmap) in enumerate(self.heatmap_results.items()):
+            print("name : ", name)
             row = (i + 1) // cols
             col = (i + 1) % cols
             fig = Figure(figsize=(4, 4))
             ax = fig.add_subplot(111)
-            ax.imshow(img_array)
-            ax.imshow(heatmap, cmap='RdBu_r', alpha=0.6)
+            name_no_number = re.sub(r'\d+$', '', name)
+            cmap = self.explainer_dict.get(name_no_number, {}).get('cmap', 'jet')
+            print("cmap : ", cmap)
+            
+            if cmap == "gray":
+                # IG는 원본과 heatmap을 겹치지 않음
+                ax.imshow(heatmap, cmap=cmap)
+            else:
+                # 나머지는 원본 위에 heatmap을 겹침
+                ax.imshow(img_array)
+                ax.imshow(heatmap, cmap=cmap, alpha=0.6)
+            
             ax.set_title(f"{name.upper()}")
             ax.axis('off')
             canvas = FigureCanvas(fig)

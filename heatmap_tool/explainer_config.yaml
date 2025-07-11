@@ -2,11 +2,13 @@ explainer_dict:
   cam:
     class: CAM
     description: "Class Activation Mapping"
+    cmap: "jet"
     model:
-      ResNet18: 
+      ResNet18: {}
   grad_cam:
     class: GradCAM
     description: "Gradient-weighted Class Activation Mapping"
+    cmap: "jet"
     model:
       ResNet18:
         target_layer: "layer4"
@@ -15,6 +17,7 @@ explainer_dict:
   rise:
     class: RISE
     description: "Randomized Input Sampling with Expectation"
+    cmap: "jet"
     model:
       ResNet18:
         N: 4000
@@ -23,6 +26,7 @@ explainer_dict:
   ig:
     class: IG
     description: "Integrated Gradients"
+    cmap: "gray"
     model:
       ResNet18:
         steps: 30

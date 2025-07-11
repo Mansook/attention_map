@@ -7,7 +7,7 @@ class IG(nn.Module):
     def __init__(self,model,config_dict):
         super(IG,self).__init__()
         self.model = model.eval()
-        self.input_size = config_dict.get('input_size',(96,96))
+        self.input_size = tuple(config_dict.get('input_size',(96,96)))
         self.steps = config_dict.get('steps',10)
         self.baseline = None
         self.feature_maps = None

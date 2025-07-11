@@ -18,7 +18,7 @@ class RISE:
         self.N = config_dict.get('N', 4000)
         self.s = config_dict.get('s', 8)
         self.p1 = config_dict.get('p1', 0.1)
-        self.input_size = config_dict.get('input_size', (96, 96))
+        self.input_size = tuple(config_dict.get('input_size', (96, 96)))
 
         self.device = next(model.parameters()).device
         self.masks = self.generate_masks()  # [N, H, W]
@@ -30,7 +30,7 @@ class RISE:
         masks = []
         for _ in range(self.N):
             small_mask = (torch.rand((self.s, self.s)) < self.p1).float()  # [s, s]
-            mask = resize(small_mask.unsqueeze(0), self.input_size, interpolation=InterpolationMode.BILINEAR)
+            mask = resize(small_mask.unsqueeze(0), list(self.input_size), interpolation=InterpolationMode.BILINEAR)
             masks.append(mask.squeeze(0))  # [H, W]
         masks = torch.stack(masks)  # [N, H, W]
         return masks.to(self.device)

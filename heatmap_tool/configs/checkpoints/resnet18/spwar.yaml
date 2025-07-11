@@ -1,0 +1,112 @@
+  checkpoint_name: spwar.pt
+  model: ResNet18
+  dataset: spwar
+  num_classes: 2
+  checkpoint_path: C:\Users\orgin\XAI-study\heatmap_tool\checkpoints/resnet18/spwar.pt
+  description: ResNet18 trained on spwar dataset
+  model_structure: &id001
+    weights: true
+    conv1:
+      kernel_size: 7
+      stride: 2
+      padding: 3
+      bias: false
+    maxpool: default
+  dataset_config:
+    name: spwar
+    root: ./data/spwar
+    num_classes: 2
+    batch_size: 64
+    num_workers: 10
+    download: false
+    samples_per_class: null
+    transform:
+      img_size:
+      - 224
+      - 224
+      normalize:
+        mean:
+        - 0.5
+        - 0.5
+        - 0.5
+        std:
+        - 0.5
+        - 0.5
+        - 0.5
+    models:
+      ResNet18: *id001
+  training_info:
+    epochs: 10
+    learning_rate: 0.001
+    optimizer: Adam
+    batch_size: 64
+    best_accuracy: 0.0
+    final_train_acc: 97.26
+    final_test_acc: 67.5
+    training_history:
+      train_loss:
+      - 1.2341831840515136
+      - 0.7365194475173951
+      - 0.4912073452949524
+      - 0.32781482963562014
+      - 0.29510948009490967
+      - 0.31570637922286987
+      - 0.14550704231262207
+      - 0.17834074459671975
+      - 0.04406742548942566
+      - 0.08435991587638855
+      train_acc:
+      - 54.92
+      - 72.76
+      - 82.18
+      - 88.46
+      - 89.76
+      - 89.8
+      - 95.3
+      - 94.16
+      - 98.84
+      - 97.26
+      val_loss:
+      - null
+      - null
+      - null
+      - null
+      - null
+      - null
+      - null
+      - null
+      - null
+      - null
+      val_acc:
+      - null
+      - null
+      - null
+      - null
+      - null
+      - null
+      - null
+      - null
+      - null
+      - null
+      test_loss:
+      - 1.304145534515381
+      - 0.9800311498641968
+      - 1.5431187477111816
+      - 0.9470366697311401
+      - 1.0774022026062011
+      - 1.2671477670669555
+      - 1.2069784240722656
+      - 0.8131705021858215
+      - 1.0381142196655273
+      - 1.4959727754592895
+      test_acc:
+      - 58.3125
+      - 66.525
+      - 57.6875
+      - 70.15
+      - 69.4125
+      - 67.775
+      - 69.875
+      - 76.275
+      - 74.2
+      - 67.5

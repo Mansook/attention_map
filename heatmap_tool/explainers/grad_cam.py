@@ -9,7 +9,7 @@ class GradCAM(nn.Module):
         
         # config_dict에서 설정 가져오기
         self.target_layer_name = config_dict.get('target_layer', 'layer4')
-        self.input_size = config_dict.get('input_size', (96, 96))
+        self.input_size = tuple(config_dict.get('input_size', (96, 96)))
         
         self.feature_maps = None
         self.gradients = None
@@ -18,7 +18,7 @@ class GradCAM(nn.Module):
     def _register_hook(self):
         def forward_hook(module, input, output):
             self.feature_maps = output
-            print(f"[GradCAM] 🔍 feature_maps.shape: {output.shape}")  # ✅ 여기에 찍어야 shape 확인됨
+        
         def backward_hook(module, grad_input, grad_output):
             self.gradients = grad_output[0]
             
