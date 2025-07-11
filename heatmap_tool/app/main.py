@@ -17,7 +17,7 @@ from utils.explainer_add_dialog import ExplainerAddDialog  # 다이얼로그는 
 
 # 상위 디렉토리 모듈들 import
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from explainers import CAM, GradCAM, RISE
+from explainers import CAM, GradCAM, RISE, IG
 from models import ResNetClassifier
 from dataset.datasetLoader import get_dataloaders
 from utils.set_korean import setup_korean_font
@@ -44,7 +44,7 @@ class XAIGUI(QMainWindow):
         self.runXaiBtn.setEnabled(False)
         # Explainer 관리 버튼 바인딩
         self.addExplainerBtn.clicked.connect(self.open_add_explainer_dialog)
-        self.removeExplainerBtn.clicked.connect(self.remove_selected_explainer)
+        #self.removeExplainerBtn.clicked.connect(self.remove_selected_explainer)
         # 리스트에서 더블클릭 시 삭제
         self.explainerListWidget.itemDoubleClicked.connect(self.remove_selected_explainer)
         # Hover 이벤트 활성화
@@ -301,7 +301,7 @@ class XAIGUI(QMainWindow):
             fig = Figure(figsize=(4, 4))
             ax = fig.add_subplot(111)
             ax.imshow(img_array)
-            ax.imshow(heatmap, cmap='jet', alpha=0.6)
+            ax.imshow(heatmap, cmap='RdBu_r', alpha=0.6)
             ax.set_title(f"{name.upper()}")
             ax.axis('off')
             canvas = FigureCanvas(fig)

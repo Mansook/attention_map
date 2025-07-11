@@ -3,7 +3,6 @@ import torch
 import argparse
 import os
 import yaml
-from explainers import CAM, GradCAM,RISE
 from models import ResNetClassifier
 from dataset.datasetLoader import get_dataloaders
 from utils.visualization import visualize_xai

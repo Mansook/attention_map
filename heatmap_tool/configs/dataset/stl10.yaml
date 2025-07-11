@@ -1,6 +1,6 @@
 # STL10 데이터셋 설정
 name: "STL10"
-root: "./data/stl10_binary"  # 로컬 데이터 저장 위치
+root: "../data/stl10_binary"  # 로컬 데이터 저장 위치
 num_classes: 10
 batch_size: 128
 num_workers: 10

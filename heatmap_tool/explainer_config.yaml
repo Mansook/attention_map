@@ -20,7 +20,12 @@ explainer_dict:
         N: 4000
         s: 8
         p1: 0.1
-
+  ig:
+    class: IG
+    description: "Integrated Gradients"
+    model:
+      ResNet18:
+        steps: 30
   # 필요시 추가 explainer
   # my_custom_xai:
   #   class: MyCustomXAI

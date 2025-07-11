@@ -5,7 +5,6 @@ import yaml
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import kagglehub
 
 # 상위 디렉토리 추가 (heatmap_tool 폴더)
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -14,30 +13,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dataset.datasetLoader import get_dataloaders
 from models.resnet_classifier import ResNetClassifier
 from utils.save_checkpoint_config import save_checkpoint_config
-
-def load_dataset_config(dataset_name):
-    """configs/dataset/{dataset_name}.yaml 파일에서 설정 로드"""
-    # heatmap_tool 폴더 기준으로 경로 설정
-    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"configs/dataset/{dataset_name.lower()}.yaml")
-    
-    if not os.path.exists(config_path):
-        raise FileNotFoundError(f"Config 파일을 찾을 수 없습니다: {config_path}")
-    
-    with open(config_path, 'r', encoding='utf-8') as f:
-        config = yaml.safe_load(f)
-    
-    if config is None:
-        raise ValueError(f"Config 파일이 비어있거나 잘못된 형식입니다: {config_path}")
-    
-    # 필수 필드 검증
-    required_fields = ['name', 'root', 'num_classes', 'batch_size']
-    missing_fields = [field for field in required_fields if field not in config]
-    
-    if missing_fields:
-        raise ValueError(f"Config 파일에 필수 필드가 누락되었습니다: {missing_fields}")
-    
-    return config
-
+from utils.load_config import load_dataset_config
 
 def train(model, device, train_loader, criterion, optimizer, epoch):
     model.train()
@@ -104,20 +80,18 @@ def main():
     print(f"   - 클래스 수: {config['num_classes']}")
     print(f"   - 배치 크기: {config['batch_size']}")
 
-    # 2. kagglehub_id가 있으면 다운로드
-    kagglehub_id = config.get('kagglehub_id', None)
-    if kagglehub_id:
-        # 데이터셋이 없으면 다운로드
-        if not os.path.exists(config['root']):
-            print(f"데이터셋이 없으므로 kagglehub에서 다운로드합니다... ({kagglehub_id})")
-            path = kagglehub.dataset_download(kagglehub_id)
-            print("Path to dataset files:", path)
-            # config['root']를 다운로드 받은 경로로 덮어쓰기
-            config['root'] = path
+    # 삭제함
 
     # 3. 이후 기존대로 데이터로더 생성
-    train_loader, val_loader, test_loader = get_dataloaders(config)
+    train_loader, val_loader, test_loader, num_classes, class_names = get_dataloaders(config)
     
+    # config에 명시된 클래스 수와 실제 데이터셋에서 감지된 클래스 수가 일치하는지 검증
+    if int(config['num_classes']) != int(num_classes):
+        print(f"⚠️ [경고] config['num_classes']({config['num_classes']})와 실제 데이터셋 클래스 수({num_classes})가 다릅니다!")
+        print("   config['num_classes'] 값을 실제 데이터셋 클래스 수에 맞게 수정하는 것을 권장합니다.")
+    else:
+        print(f"✅ config['num_classes']와 실제 데이터셋 클래스 수({num_classes})가 일치합니다.")
+
     # ResNet18 모델 설정 가져오기
     model_name = "ResNet18"
     if 'models' not in config or model_name not in config['models']:
@@ -139,9 +113,8 @@ def main():
     
     # 모델 생성
     print(f" 모델 생성: {model_name}")
-    model = ResNetClassifier(num_classes=config['num_classes'], dataset_config=model_structure).to(device)
-    
-    print(f"✅ 모델 생성 완료 (클래스 수: {config['num_classes']})")
+    model = ResNetClassifier(num_classes = num_classes, dataset_config=model_structure).to(device)
+    print(f"✅ 모델 생성 완료 (클래스 수: {num_classes}")
     print(f"model_structure: {model_structure}")
     # 손실 함수 및 옵티마이저 설정
     criterion = nn.CrossEntropyLoss()

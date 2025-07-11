@@ -2,7 +2,7 @@
 heatmap_tool/data/
 heatmap_tool/dataset/
 heatmap_tool/train/data/
-heatmap_too/cam_results/
+heatmap_tool/cam_results/
 # Model checkpoints
 heatmap_tool/checkpoints/
 

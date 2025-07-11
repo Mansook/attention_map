@@ -1,0 +1,26 @@
+# Sparrow 세부종 분류 데이터셋 설정
+name: "sparrow_img"
+root: "../data/bird_img/sparrow"  # 세부종 폴더들이 있는 위치
+num_classes: 2  # 자동으로 폴더 개수만큼 인식됨, 또는 실제 클래스 개수로 수정
+batch_size: 64
+num_workers: 4
+download: false
+samples_per_class: null
+
+# 데이터 전처리 설정
+transform:
+  img_size: [224, 224]
+  normalize:
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+
+# 모델 설정
+models:
+  ResNet18:
+    weights: true
+    conv1:
+      kernel_size: 7
+      stride: 2
+      padding: 3
+      bias: false
+    maxpool: "identity"

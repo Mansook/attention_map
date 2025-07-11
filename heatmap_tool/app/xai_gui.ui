@@ -134,13 +134,7 @@
           <item>
            <widget class="QListWidget" name="explainerListWidget"/>
           </item>
-          <item>
-           <widget class="QPushButton" name="removeExplainerBtn">
-            <property name="text">
-             <string>선택 Explainer 삭제</string>
-            </property>
-           </widget>
-          </item>
+          
          </layout>
         </widget>
        </item>
