@@ -109,9 +109,12 @@ class XAIGUI(QMainWindow):
                 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                 checkpoint_path = os.path.join(project_root, checkpoint_path)
             if model_name.lower() == "resnet18":
+                print("Trying resnet18 load") 
                 self.model = ResNetClassifier(num_classes=num_classes, dataset_config=model_structure)
             elif model_name.lower() == "resnet34":
+                print("Trying resnet34 load") 
                 self.model = CustomResNet34(num_classes=num_classes)
+
             else:
                 
                 ##모델 추가##
@@ -119,13 +122,24 @@ class XAIGUI(QMainWindow):
                 raise ValueError(f"지원하지 않는 모델: {model_name}")
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.model = self.model.to(device)
-            if os.path.exists(checkpoint_path):
-                self.model.load_state_dict(torch.load(checkpoint_path, map_location=device))
-                self.model.eval()
-                self.infoText.append(f"모델 가중치 로드 완료: {device}")
-            else:
-                raise FileNotFoundError(f"체크포인트 파일을 찾을 수 없습니다: {checkpoint_path}")
-        
+            checkpoint = torch.load(checkpoint_path, map_location=device)
+
+            # 혹시 checkpoint가 dict로 감싸져 있으면
+            if 'state_dict' in checkpoint:
+                checkpoint = checkpoint['state_dict']
+
+            # prefix 'network.' 제거
+            new_state_dict = {}
+            for k, v in checkpoint.items():
+                if k.startswith('network.'):
+                    new_state_dict[k[8:]] = v
+                else:
+                    new_state_dict[k] = v
+
+            # 모델에 로드
+            self.model.load_state_dict(new_state_dict)
+            self.model.eval()
+            self.infoText.append(f"모델 가중치 로드 완료: {device}")
         except Exception as e:
             raise Exception(f"모델 로드 실패: {str(e)}")
 
