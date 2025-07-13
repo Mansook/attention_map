@@ -19,7 +19,7 @@ import re
 # 상위 디렉토리 모듈들 import
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from explainers import CAM, GradCAM, RISE, IG
-from models import ResNetClassifier
+from models import ResNetClassifier, CustomResNet34
 from dataset.datasetLoader import get_dataloaders
 from utils.set_korean import setup_korean_font
 from utils.xaiworker import XAIWorker
@@ -30,21 +30,33 @@ class XAIGUI(QMainWindow):
         super().__init__()
         setup_korean_font()
         uic.loadUi(os.path.join(os.path.dirname(__file__), 'xai_gui.ui'), self)
+        self.setup_ui()
+        
+        # explainer config 로드
+        try:
+            config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "explainer_config.yaml")
+            with open(config_path, 'r', encoding='utf-8') as f:
+                self.explainer_config = yaml.safe_load(f)
+            self.explainer_dict = self.explainer_config['explainer_dict']
+        except Exception as e:
+            print(f"Explainer 설정 로드 실패: {str(e)}")
+            self.explainer_config = {}
+            self.explainer_dict = {}
+        
         self.model = None
         self.config = None
-        self.explainers = {}
-        self.explainer_dict = {}
         self.current_image = None
         self.current_image_tensor = None
         self.heatmap_results = {}
-        self._bind_widgets()
+        self.explainers = {}
+        self.worker = None
         
         self.current_explainees = {}
         
         
         self.resize(1800, 1200)  # 또는 원하는 크기로 조정
 
-    def _bind_widgets(self):
+    def setup_ui(self):
         self.loadCheckpointBtn.clicked.connect(self.load_checkpoint)
         self.loadImageBtn.clicked.connect(self.load_image)
         self.runXaiBtn.clicked.connect(self.run_xai)
@@ -98,6 +110,8 @@ class XAIGUI(QMainWindow):
                 checkpoint_path = os.path.join(project_root, checkpoint_path)
             if model_name.lower() == "resnet18":
                 self.model = ResNetClassifier(num_classes=num_classes, dataset_config=model_structure)
+            elif model_name.lower() == "resnet34":
+                self.model = CustomResNet34(num_classes=num_classes)
             else:
                 
                 ##모델 추가##
@@ -111,36 +125,13 @@ class XAIGUI(QMainWindow):
                 self.infoText.append(f"모델 가중치 로드 완료: {device}")
             else:
                 raise FileNotFoundError(f"체크포인트 파일을 찾을 수 없습니다: {checkpoint_path}")
-            self.setup_explainers()
+        
         except Exception as e:
             raise Exception(f"모델 로드 실패: {str(e)}")
 
-    def setup_explainers(self):
-        try:
-            config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "explainer_config.yaml")
-            with open(config_path, 'r', encoding='utf-8') as f:
-                explainer_config = yaml.safe_load(f)
-            self.explainer_dict = explainer_config['explainer_dict']
-            if self.config is None:
-                raise ValueError("설정이 로드되지 않았습니다.")
-            input_size = tuple(self.config['dataset_config']['transform']['img_size'])
-            for name, config in self.explainer_dict.items():
-                explainer_class = eval(config['class'])
-                explainer_params = config['model'].get(self.config['model'], {})
-                explainer_params['input_size'] = input_size
-                self.explainers[name] = explainer_class(self.model, explainer_params)
-                self.infoText.append(f"Explainer 설정 완료: {name}")
-            self.update_explainer_list()
-        except Exception as e:
-            raise Exception(f"Explainer 설정 실패: {str(e)}")
-
     def open_add_explainer_dialog(self):
-        # explainer_config.yaml 로드
-        config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "explainer_config.yaml")
-        with open(config_path, 'r', encoding='utf-8') as f:
-            explainer_config = yaml.safe_load(f)
-        if self.config and 'model' in self.config:
-            dialog = ExplainerAddDialog(explainer_config, self.config['model'], self)
+        # 이미 로드된 explainer_config 사용
+        dialog = ExplainerAddDialog(self.explainer_config, self.config['model'], self)
         if dialog.exec_():
             explainer_name, params = dialog.get_explainer_info()
             # 파라미터 타입 변환
@@ -149,7 +140,7 @@ class XAIGUI(QMainWindow):
                     params[k] = eval(v)
                 except:
                     pass
-            explainer_class = eval(explainer_config['explainer_dict'][explainer_name]['class'])
+            explainer_class = eval(self.explainer_config['explainer_dict'][explainer_name]['class'])
             # ---------- 중복 이름 처리 ----------
             base_name = explainer_name
             idx = 0
@@ -174,6 +165,7 @@ class XAIGUI(QMainWindow):
         name = item.text()
         msg = make_explainer_tooltip(
             name,
+            self.explainers,
             self.explainer_dict,
             self.config,
             self.current_image_tensor
@@ -232,18 +224,43 @@ class XAIGUI(QMainWindow):
             raise ValueError("설정 또는 모델이 로드되지 않았습니다.")
         num_classes = self.config['num_classes']
         self.targetClassCombo.clear()
+        
+        # class_map 로드
+        class_map = {}
+        if 'class_map' in self.config:
+            for item in self.config['class_map']:
+                for key, value in item.items():
+                    class_map[int(key)] = value
+        
         with torch.no_grad():
             output = self.model(self.current_image_tensor)
             predicted_class = torch.argmax(output, dim=1).item()
             confidence = torch.softmax(output, dim=1).max(dim=1).values.item()
+        
         for i in range(num_classes):
-            class_name = f"클래스 {i}"
+            # class_map에서 클래스 이름 가져오기
+            class_name = class_map.get(i, f"클래스 {i}")
             if i == predicted_class:
                 class_name += f" (예측, {confidence:.3f})"
             self.targetClassCombo.addItem(class_name, i)
+        
         self.targetClassCombo.setCurrentIndex(int(predicted_class))
         self.targetClassCombo.setEnabled(True)
         self.current_explainees = {}
+
+    def get_class_name_by_index(self, index):
+        """
+        인덱스를 클래스 이름으로 변환
+        """
+        if self.config is None or 'class_map' not in self.config:
+            return f"클래스 {index}"
+        
+        class_map = {}
+        for item in self.config['class_map']:
+            for key, value in item.items():
+                class_map[int(key)] = value
+        
+        return class_map.get(index, f"클래스 {index}")
 
     def run_xai(self):
         if self.current_image_tensor is None:
@@ -354,7 +371,11 @@ class XAIGUI(QMainWindow):
                 ax.imshow(img_array)
                 ax.imshow(heatmap, cmap=cmap, alpha=0.6)
             
-            ax.set_title(f"{name.upper()}")
+            # 현재 선택된 클래스 이름 가져오기
+            target_class_index = self.targetClassCombo.currentData()
+            class_name = self.get_class_name_by_index(target_class_index)
+            
+            ax.set_title(f"{name.upper()} - {class_name}")
             ax.axis('off')
             canvas = FigureCanvas(fig)
             self.vizLayout.addWidget(canvas, row, col)

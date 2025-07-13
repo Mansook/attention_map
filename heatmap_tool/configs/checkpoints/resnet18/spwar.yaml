@@ -2,6 +2,9 @@
   model: ResNet18
   dataset: spwar
   num_classes: 2
+  class_map:
+    - 0: "sparrow"
+    - 1: "warbler"
   checkpoint_path: C:\Users\orgin\XAI-study\heatmap_tool\checkpoints/resnet18/spwar.pt
   description: ResNet18 trained on spwar dataset
   model_structure: &id001
