@@ -3,456 +3,456 @@ model: ResNet34
 dataset: bird
 num_classes: 450
 class_map:
-  - 0: 애벗바블러
-  - 1: 애벗부비새
-  - 2: 아비시니아땅코뿔새
-  - 3: 아프리카관두루미
-  - 4: 아프리카에메랄드뻐꾸기
-  - 5: 아프리카불핀치
-  - 6: 아프리카굴뚝새
-  - 7: 아프리카흰뺨코뿔새
-  - 8: 알바트로스(신천옹)
-  - 9: 앨버트토히
-  - 10: 알렉산드린앵무새
-  - 11: 알프스까마귀
-  - 12: 알타미라노랑목멧새
-  - 13: 아메리카장다리물떼새
-  - 14: 아메리카개개비
-  - 15: 아메리카물닭
-  - 16: 아메리카홍학
-  - 17: 아메리카금방울새
-  - 18: 아메리카황조롱이
-  - 19: 아메리카밭종다리
-  - 20: 아메리카붉은딱새
-  - 21: 아메리카홍머리오리
-  - 22: 자수정벌새
-  - 23: 안데스기러기
-  - 24: 안데스물떼새
-  - 25: 안데스방울새
-  - 26: 아나잉가(뱀새)
-  - 27: 아니아니아우
-  - 28: 안나벌새
-  - 29: 개미잡이새
-  - 30: 안틸레스유포니아
-  - 31: 아파파네
-  - 32: 사도새
-  - 33: 아라리페마나킨
-  - 34: 잿빛폭풍새
-  - 35: 잿빛지빠귀새
-  - 36: 아시아관코뿔새
-  - 37: 아시아딜라드새
-  - 38: 오클랜드샥
-  - 39: 오스트랄카나스테로
-  - 40: 오스트랄라시아무화과새
-  - 41: 아바다바트(아바다바트방울새)
-  - 42: 아자라스스피넷테일
-  - 43: 하늘색가슴피타새
-  - 44: 하늘색어치
-  - 45: 하늘색탄저새
-  - 46: 하늘색박새
-  - 47: 바이칼청둥오리
-  - 48: 흰머리독수리
-  - 49: 대머리따오기
-  - 50: 발리찌르레기
-  - 51: 볼티모어찌르레기
-  - 52: 바나나퀴트
-  - 53: 띠꼬리관
-  - 54: 띠넓적부리새
-  - 55: 띠피타새
-  - 56: 띠물떼새
-  - 57: 바테일드도요
-  - 58: 흰올빼미
-  - 59: 제비
-  - 60: 줄무늬퍼프버드
-  - 61: 배로우황금눈오리
-  - 62: 밤가슴울새
-  - 63: 수염바베트
-  - 64: 수염방울새
-  - 65: 수염갈대새
-  - 66: 벨티드물총새
-  - 67: 극락조
-  - 68: 검정노랑넓적부리새
-  - 69: 검은바자
-  - 70: 검은앵무새
-  - 71: 검은프랑콜린
-  - 72: 검은스키머
-  - 73: 검은백조
-  - 74: 검은꼬리크레이크
-  - 75: 검은목박새
-  - 76: 검은목울새
-  - 77: 검은통풍새
-  - 78: 검은대머리독수리
-  - 79: 검은머리박새
-  - 80: 검은목논병아리
-  - 81: 검은목참새
-  - 82: 블랙번울새
-  - 83: 금발관박새
-  - 84: 피의꿩
-  - 85: 푸른코아우
-  - 86: 푸른다크니스
-  - 87: 푸른그라우스
-  - 88: 푸른왜가리
-  - 89: 푸른말코하
-  - 90: 푸른목투카넷
-  - 91: 보볼링크
-  - 92: 보르네오브리스틀헤드
-  - 93: 보르네오잎새
-  - 94: 보르네오꿩
-  - 95: 브란트가마우지
-  - 96: 브루어검은새
-  - 97: 갈색나무타기새
-  - 98: 갈색노디
-  - 99: 갈색찌르레기
-  - 100: 버플헤드오리
-  - 101: 불워즈꿩
-  - 102: 버첼스쿠르서
-  - 103: 칠면조(부시터키)
-  - 104: 카팅가카촐로테
-  - 105: 선인장울새
-  - 106: 캘리포니아콘도르
-  - 107: 캘리포니아갈매기
-  - 108: 캘리포니아메추라기
-  - 109: 캄포플리커
-  - 110: 카나리아
-  - 111: 케이프광택찌르레기
-  - 112: 케이프롱클로
-  - 113: 케이프메이울새
-  - 114: 케이프바위지빠귀
-  - 115: 뚜껑쓴왜가리
-  - 116: 카푸친새
-  - 117: 카민벌새잡이
-  - 118: 카스피해제비갈매기
-  - 119: 카소와리
-  - 120: 삼나무밀화부리
-  - 121: 세룰리안울새
-  - 122: 칼라데콜라
-  - 123: 채터링로리
-  - 124: 밤배유포니아
-  - 125: 중국대나무메추라기
-  - 126: 중국논왜가리
-  - 127: 칩핑참새
-  - 128: 추카오타파쿨로
-  - 129: 추카르메추라기
-  - 130: 계피아틸라
-  - 131: 계피잡이새
-  - 132: 계피오리
-  - 133: 클라크너트크래커
-  - 134: 암석수탉
-  - 135: 앵무새
-  - 136: 칼라드아라카리
-  - 137: 불꽃왕관새
-  - 138: 큰찌르레기
-  - 139: 집제비
-  - 140: 커먼이오라
-  - 141: 큰논병아리
-  - 142: 커먼푸어윌
-  - 143: 찌르레기
-  - 144: 구리꼬리쿠칼
-  - 145: 게도요
-  - 146: 크레인호크
-  - 147: 크림색딱따구리
-  - 148: 크레스트오클렛
-  - 149: 크레스트카라카라
-  - 150: 크레스트쿠아
-  - 151: 크레스트파이어백
-  - 152: 크레스트물총새
-  - 153: 크레스트박새
-  - 154: 크레스트오로펜돌라
-  - 155: 크레스트쉬리케티트
-  - 156: 크림슨챗
-  - 157: 크림슨태양새
-  - 158: 까마귀
-  - 159: 관비둘기
-  - 160: 쿠바토디
-  - 161: 쿠바트로곤
-  - 162: 컬크레스트아라쿠리
-  - 163: 다르노바베트
-  - 164: 달마시안펠리컨
-  - 165: 다르질링딱따구리
-  - 166: 다크아이쥰코
-  - 167: 다윈잡이새
-  - 168: 다우리안딱새
-  - 169: 데모이젤두루미
-  - 170: 더블바드핀치
-  - 171: 더블브레스트가마우지
-  - 172: 더블아이피그앵무새
-  - 173: 다운이딱따구리
-  - 174: 더스키로리
-  - 175: 더스키로빈
-  - 176: 이얼드피타
-  - 177: 동부블루버드
-  - 178: 동부블루보넷
-  - 179: 동부황금위버
-  - 180: 동부초원종다리
-  - 181: 동부로젤라앵무새
-  - 182: 동부토위
-  - 183: 동부윕푸어윌
-  - 184: 에콰도리안힐스타
-  - 185: 이집트기러기
-  - 186: 엘레강트트로곤
-  - 187: 엘리엇꿩
-  - 188: 에메랄드탄저새
-  - 189: 황제펭귄
-  - 190: 에뮤
-  - 191: 엥가노마이나
-  - 192: 유라시아홍방울새
-  - 193: 유라시아황금찌르레기
-  - 194: 유라시아까치
-  - 195: 유럽홍방울새
-  - 196: 유럽멧비둘기
-  - 197: 이브닝그로스비크
-  - 198: 요정파랑새
-  - 199: 요정펭귄
-  - 200: 요정제비갈매기
-  - 201: 부채꼬리과부새
-  - 202: 줄무늬울새
-  - 203: 불꽃민이벳
-  - 204: 피오르드랜드펭귄
-  - 205: 불꽃꼬리미조르니스
-  - 206: 플레임바우어버드
-  - 207: 플레임탄저새
-  - 208: 프리깃새
-  - 209: 갬벨메추라기
-  - 210: 갱갱앵무새
-  - 211: 길라딱따구리
-  - 212: 길디드플리커
-  - 213: 광택따오기
-  - 214: 고어웨이버드
-  - 215: 금날개울새
-  - 216: 황금바우어버드
-  - 217: 황금뺨울새
-  - 218: 황금클로로포니아
-  - 219: 황금독수리
-  - 220: 황금앵무새
-  - 221: 황금꿩
-  - 222: 황금삑삑이
-  - 223: 굴디안핀치
-  - 224: 그란달라
-  - 225: 회색고양이새
-  - 226: 회색킹버드
-  - 227: 회색메추라기
-  - 228: 큰회색올빼미
-  - 229: 큰자카마
-  - 230: 큰키스카디
-  - 231: 큰포토우
-  - 232: 큰티나무
-  - 233: 큰제노프스
-  - 234: 큰피위
-  - 235: 큰세이지그라우스
-  - 236: 녹색넓적부리새
-  - 237: 녹색어치
-  - 238: 녹색까치
-  - 239: 회색쿠쿠쉬라이크
-  - 240: 회색물떼새
-  - 241: 홈빌애니
-  - 242: 기니터라코
-  - 243: 기니아새
-  - 244: 거니즈피타
-  - 245: 기르팔콘
-  - 246: 하머콥
-  - 247: 할리퀸오리
-  - 248: 할리퀸메추라기
-  - 249: 하피이글
-  - 250: 하와이기러기
-  - 251: 호핀치
-  - 252: 헬멧방가
-  - 253: 헤파틱탄저새
-  - 254: 히말라야블루테일
-  - 255: 히말라야모날
-  - 256: 호아친
-  - 257: 후드머거서
-  - 258: 후포(후포새)
-  - 259: 뿔관
-  - 260: 뿔종다리
-  - 261: 뿔벌새
-  - 262: 집방울새
-  - 263: 집참새
-  - 264: 히아신스마코
-  - 265: 이베리아까치
-  - 266: 이비스빌
-  - 267: 임페리얼샥
-  - 268: 잉카제비갈매기
-  - 269: 인도버스터드
-  - 270: 인도피타새
-  - 271: 인도롤러
-  - 272: 인도대머리독수리
-  - 273: 인디고방울새
-  - 274: 인디고잡이새
-  - 275: 내륙도터렐
-  - 276: 상아부리아라카리
-  - 277: 상아갈매기
-  - 278: 이위
-  - 279: 자비루
-  - 280: 잭스나이프
-  - 281: 잔다야앵무새
-  - 282: 일본울새
-  - 283: 자바참새
-  - 284: 조코토코앤트피타
-  - 285: 카구
-  - 286: 카카포
-  - 287: 킬디어
-  - 288: 킹아이더
-  - 289: 킹벌처
-  - 290: 키위
-  - 291: 쿠카부라
-  - 292: 종다리번팅
-  - 293: 라줄리번팅
-  - 294: 레서어쥬턴트
-  - 295: 라일락롤러
-  - 296: 작은오리
-  - 297: 로거헤드쉬라이크
-  - 298: 긴귀올빼미
-  - 299: 까치기러기
-  - 300: 말라바르관코뿔새
-  - 301: 말라카이트물총새
-  - 302: 말라가시흰눈새
-  - 303: 말레오
-  - 304: 청둥오리
-  - 305: 만드린오리
-  - 306: 맹그로브뻐꾸기
-  - 307: 마라부황새
-  - 308: 마스크부비새
-  - 309: 마스크물떼새
-  - 310: 맥케이스번팅
-  - 311: 미카도꿩
-  - 312: 애도비둘기
-  - 313: 마이나
-  - 314: 니코바르비둘기
-  - 315: 노이즈프라이어버드
-  - 316: 북부수염티라눌렛
-  - 317: 북부홍관조
-  - 318: 북부플리커
-  - 319: 북부풀마
-  - 320: 북부가넷
-  - 321: 북부고샤크
-  - 322: 북부자카나
-  - 323: 북부흉내지빠귀
-  - 324: 북부파룰라
-  - 325: 북부붉은주홍새
-  - 326: 북부쇠오리
-  - 327: 오셀레이트터키
-  - 328: 오키나와레일
-  - 329: 주황가슴번팅
-  - 330: 동양올빼미
-  - 331: 물수리
-  - 332: 타조
-  - 333: 오븐새
-  - 334: 굴뚝새
-  - 335: 페인티드번팅
-  - 336: 팔릴라
-  - 337: 파라다이스탄저새
-  - 338: 파라켓아쿨렛
-  - 339: 큰박새
-  - 340: 파타고니아시아라핀치
-  - 341: 공작
-  - 342: 송골매
-  - 343: 필리핀독수리
-  - 344: 핑크로빈
-  - 345: 포마린자거
-  - 346: 퍼핀
-  - 347: 보라방울새
-  - 348: 보라물닭
-  - 349: 보라제비
-  - 350: 보라늪닭
-  - 351: 피그미물총새
-  - 352: 케찰
-  - 353: 무지개로리킷
-  - 354: 레이저빌
-  - 355: 붉은수염벌새잡이
-  - 356: 붉은배피타새
-  - 357: 붉은눈썹방울새
-  - 358: 붉은얼굴가마우지
-  - 359: 붉은얼굴울새
-  - 360: 붉은포디
-  - 361: 붉은머리오리
-  - 362: 붉은머리딱따구리
-  - 363: 붉은꿀먹이새
-  - 364: 붉은목트로곤
-  - 365: 붉은꼬리매
-  - 366: 붉은꼬리지빠귀
-  - 367: 붉은날개검은새
-  - 368: 붉은귀불불
-  - 369: 리젠트바우어버드
-  - 370: 목에고리꿩
-  - 371: 로드러너
-  - 372: 울새
-  - 373: 바위비둘기
-  - 374: 장미얼굴사랑앵무
-  - 375: 거친다리부저드
-  - 376: 로열플라이캐처
-  - 377: 루비목벌새
-  - 378: 루디물총새
-  - 379: 루푸스물총새
-  - 380: 루푸오스모트모트
-  - 381: 수마트라지빠귀
-  - 382: 모래제비
-  - 383: 샌드힐두루미
-  - 384: 사티르트라고판
-  - 385: 주홍관과일비둘기
-  - 386: 주홍따오기
-  - 387: 주홍마코
-  - 388: 주홍탄저새
-  - 389: 슈빌(신발부리황새)
-  - 390: 짧은부리도위처
-  - 391: 스쿠아
-  - 392: 스미스롱스퍼
-  - 393: 흰눈왜가리
-  - 394: 흰부엉이
-  - 395: 흰물떼새
-  - 396: 소라
-  - 397: 스팽글코팅가
-  - 398: 스플렌디드렌
-  - 399: 숟가락부리도요
-  - 400: 숟가락부리황새
-  - 401: 점박이캣버드
-  - 402: 스리랑카파랑까치
-  - 403: 스티머덕
-  - 404: 황새부리물총새
-  - 405: 딸기방울새
-  - 406: 줄무늬부엉이
-  - 407: 줄무늬마나킨
-  - 408: 줄무늬제비
-  - 409: 슈퍼스타링
-  - 410: 스윈호꿩
-  - 411: 재봉이
-  - 412: 대만까치
-  - 413: 타카헤
-  - 414: 태즈메이니아닭
-  - 415: 청오리
-  - 416: 박새
-  - 417: 투칸
-  - 418: 타운센즈울새
-  - 419: 나무제비
-  - 420: 삼색검은새
-  - 421: 열대왕잡이새
-  - 422: 트럼프터백조
-  - 423: 칠면조독수리
-  - 424: 터쿼이즈모트모트
-  - 425: 우산새
-  - 426: 다양한지빠귀
-  - 427: 비어리
-  - 428: 베네수엘라트루피알
-  - 429: 버밀리온플라이캐처
-  - 430: 빅토리아관비둘기
-  - 431: 바이올렛그린제비
-  - 432: 바이올렛터라코
-  - 433: 벌처린기니아새
-  - 434: 벽타기새
-  - 435: 와틀드쿠라소
-  - 436: 와틀드물떼새
-  - 437: 휘브렐
-  - 438: 흰눈크레이크
-  - 439: 흰뺨터라코
-  - 440: 흰관코뿔새
-  - 441: 흰목까마귀
-  - 442: 흰꼬리트로픽버드
-  - 443: 흰목벌새잡이
-  - 444: 야생칠면조
-  - 445: 윌슨극락조
-  - 446: 원목오리
-  - 447: 노랑배꽃방울새
-  - 448: 노랑카키크
-  - 449: 노랑머리검은새
+  - 0: ABBOTTS BABBLER
+  - 1: ABBOTTS BOOBY
+  - 2: ABYSSINIAN GROUND HORNBILL
+  - 3: AFRICAN CROWNED CRANE
+  - 4: AFRICAN EMERALD CUCKOO
+  - 5: AFRICAN FIREFINCH
+  - 6: AFRICAN OYSTER CATCHER
+  - 7: AFRICAN PIED HORNBILL
+  - 8: ALBATROSS
+  - 9: ALBERTS TOWHEE
+  - 10: ALEXANDRINE PARAKEET
+  - 11: ALPINE CHOUGH
+  - 12: ALTAMIRA YELLOWTHROAT
+  - 13: AMERICAN AVOCET
+  - 14: AMERICAN BITTERN
+  - 15: AMERICAN COOT
+  - 16: AMERICAN FLAMINGO
+  - 17: AMERICAN GOLDFINCH
+  - 18: AMERICAN KESTREL
+  - 19: AMERICAN PIPIT
+  - 20: AMERICAN REDSTART
+  - 21: AMERICAN WIGEON
+  - 22: AMETHYST WOODSTAR
+  - 23: ANDEAN GOOSE
+  - 24: ANDEAN LAPWING
+  - 25: ANDEAN SISKIN
+  - 26: ANHINGA
+  - 27: ANIANIAU
+  - 28: ANNAS HUMMINGBIRD
+  - 29: ANTBIRD
+  - 30: ANTILLEAN EUPHONIA
+  - 31: APAPANE
+  - 32: APOSTLEBIRD
+  - 33: ARARIPE MANAKIN
+  - 34: ASHY STORM PETREL
+  - 35: ASHY THRUSHBIRD
+  - 36: ASIAN CRESTED IBIS
+  - 37: ASIAN DOLLARD BIRD
+  - 38: AUCKLAND SHAQ
+  - 39: AUSTRAL CANASTERO
+  - 40: AUSTRALASIAN FIGBIRD
+  - 41: AVADAVAT
+  - 42: AZARAS SPINETAIL
+  - 43: AZURE BREASTED PITTA
+  - 44: AZURE JAY
+  - 45: AZURE TANAGER
+  - 46: AZURE TIT
+  - 47: BAIKAL TEAL
+  - 48: BALD EAGLE
+  - 49: BALD IBIS
+  - 50: BALI STARLING
+  - 51: BALTIMORE ORIOLE
+  - 52: BANANAQUIT
+  - 53: BAND TAILED GUAN
+  - 54: BANDED BROADBILL
+  - 55: BANDED PITA
+  - 56: BANDED STILT
+  - 57: BAR-TAILED GODWIT
+  - 58: BARN OWL
+  - 59: BARN SWALLOW
+  - 60: BARRED PUFFBIRD
+  - 61: BARROWS GOLDENEYE
+  - 62: BAY-BREASTED WARBLER
+  - 63: BEARDED BARBET
+  - 64: BEARDED BELLBIRD
+  - 65: BEARDED REEDLING
+  - 66: BELTED KINGFISHER
+  - 67: BIRD OF PARADISE
+  - 68: BLACK & YELLOW BROADBILL
+  - 69: BLACK BAZA
+  - 70: BLACK COCKATO
+  - 71: BLACK FRANCOLIN
+  - 72: BLACK SKIMMER
+  - 73: BLACK SWAN
+  - 74: BLACK TAIL CRAKE
+  - 75: BLACK THROATED BUSHTIT
+  - 76: BLACK THROATED WARBLER
+  - 77: BLACK VENTED SHEARWATER
+  - 78: BLACK VULTURE
+  - 79: BLACK-CAPPED CHICKADEE
+  - 80: BLACK-NECKED GREBE
+  - 81: BLACK-THROATED SPARROW
+  - 82: BLACKBURNIAM WARBLER
+  - 83: BLONDE CRESTED WOODPECKER
+  - 84: BLOOD PHEASANT
+  - 85: BLUE COAU
+  - 86: BLUE DACNIS
+  - 87: BLUE GROUSE
+  - 88: BLUE HERON
+  - 89: BLUE MALKOHA
+  - 90: BLUE THROATED TOUCANET
+  - 91: BOBOLINK
+  - 92: BORNEAN BRISTLEHEAD
+  - 93: BORNEAN LEAFBIRD
+  - 94: BORNEAN PHEASANT
+  - 95: BRANDT CORMARANT
+  - 96: BREWERS BLACKBIRD
+  - 97: BROWN CREPPER
+  - 98: BROWN NOODY
+  - 99: BROWN THRASHER
+  - 100: BUFFLEHEAD
+  - 101: BULWERS PHEASANT
+  - 102: BURCHELLS COURSER
+  - 103: BUSH TURKEY
+  - 104: CAATINGA CACHOLOTE
+  - 105: CACTUS WREN
+  - 106: CALIFORNIA CONDOR
+  - 107: CALIFORNIA GULL
+  - 108: CALIFORNIA QUAIL
+  - 109: CAMPO FLICKER
+  - 110: CANARY
+  - 111: CAPE GLOSSY STARLING
+  - 112: CAPE LONGCLAW
+  - 113: CAPE MAY WARBLER
+  - 114: CAPE ROCK THRUSH
+  - 115: CAPPED HERON
+  - 116: CAPUCHINBIRD
+  - 117: CARMINE BEE-EATER
+  - 118: CASPIAN TERN
+  - 119: CASSOWARY
+  - 120: CEDAR WAXWING
+  - 121: CERULEAN WARBLER
+  - 122: CHARA DE COLLAR
+  - 123: CHATTERING LORY
+  - 124: CHESTNET BELLIED EUPHONIA
+  - 125: CHINESE BAMBOO PARTRIDGE
+  - 126: CHINESE POND HERON
+  - 127: CHIPPING SPARROW
+  - 128: CHUCAO TAPACULO
+  - 129: CHUKAR PARTRIDGE
+  - 130: CINNAMON ATTILA
+  - 131: CINNAMON FLYCATCHER
+  - 132: CINNAMON TEAL
+  - 133: CLARKS NUTCRACKER
+  - 134: COCK OF THE  ROCK
+  - 135: COCKATOO
+  - 136: COLLARED ARACARI
+  - 137: COMMON FIRECREST
+  - 138: COMMON GRACKLE
+  - 139: COMMON HOUSE MARTIN
+  - 140: COMMON IORA
+  - 141: COMMON LOON
+  - 142: COMMON POORWILL
+  - 143: COMMON STARLING
+  - 144: COPPERY TAILED COUCAL
+  - 145: CRAB PLOVER
+  - 146: CRANE HAWK
+  - 147: CREAM COLORED WOODPECKER
+  - 148: CRESTED AUKLET
+  - 149: CRESTED CARACARA
+  - 150: CRESTED COUA
+  - 151: CRESTED FIREBACK
+  - 152: CRESTED KINGFISHER
+  - 153: CRESTED NUTHATCH
+  - 154: CRESTED OROPENDOLA
+  - 155: CRESTED SHRIKETIT
+  - 156: CRIMSON CHAT
+  - 157: CRIMSON SUNBIRD
+  - 158: CROW
+  - 159: CROWNED PIGEON
+  - 160: CUBAN TODY
+  - 161: CUBAN TROGON
+  - 162: CURL CRESTED ARACURI
+  - 163: D-ARNAUDS BARBET
+  - 164: DALMATIAN PELICAN
+  - 165: DARJEELING WOODPECKER
+  - 166: DARK EYED JUNCO
+  - 167: DARWINS FLYCATCHER
+  - 168: DAURIAN REDSTART
+  - 169: DEMOISELLE CRANE
+  - 170: DOUBLE BARRED FINCH
+  - 171: DOUBLE BRESTED CORMARANT
+  - 172: DOUBLE EYED FIG PARROT
+  - 173: DOWNY WOODPECKER
+  - 174: DUSKY LORY
+  - 175: DUSKY ROBIN
+  - 176: EARED PITA
+  - 177: EASTERN BLUEBIRD
+  - 178: EASTERN BLUEBONNET
+  - 179: EASTERN GOLDEN WEAVER
+  - 180: EASTERN MEADOWLARK
+  - 181: EASTERN ROSELLA
+  - 182: EASTERN TOWEE
+  - 183: EASTERN WIP POOR WILL
+  - 184: ECUADORIAN HILLSTAR
+  - 185: EGYPTIAN GOOSE
+  - 186: ELEGANT TROGON
+  - 187: ELLIOTS  PHEASANT
+  - 188: EMERALD TANAGER
+  - 189: EMPEROR PENGUIN
+  - 190: EMU
+  - 191: ENGGANO MYNA
+  - 192: EURASIAN BULLFINCH
+  - 193: EURASIAN GOLDEN ORIOLE
+  - 194: EURASIAN MAGPIE
+  - 195: EUROPEAN GOLDFINCH
+  - 196: EUROPEAN TURTLE DOVE
+  - 197: EVENING GROSBEAK
+  - 198: FAIRY BLUEBIRD
+  - 199: FAIRY PENGUIN
+  - 200: FAIRY TERN
+  - 201: FAN TAILED WIDOW
+  - 202: FASCIATED WREN
+  - 203: FIERY MINIVET
+  - 204: FIORDLAND PENGUIN
+  - 205: FIRE TAILLED MYZORNIS
+  - 206: FLAME BOWERBIRD
+  - 207: FLAME TANAGER
+  - 208: FRIGATE
+  - 209: GAMBELS QUAIL
+  - 210: GANG GANG COCKATOO
+  - 211: GILA WOODPECKER
+  - 212: GILDED FLICKER
+  - 213: GLOSSY IBIS
+  - 214: GO AWAY BIRD
+  - 215: GOLD WING WARBLER
+  - 216: GOLDEN BOWER BIRD
+  - 217: GOLDEN CHEEKED WARBLER
+  - 218: GOLDEN CHLOROPHONIA
+  - 219: GOLDEN EAGLE
+  - 220: GOLDEN PARAKEET
+  - 221: GOLDEN PHEASANT
+  - 222: GOLDEN PIPIT
+  - 223: GOULDIAN FINCH
+  - 224: GRANDALA
+  - 225: GRAY CATBIRD
+  - 226: GRAY KINGBIRD
+  - 227: GRAY PARTRIDGE
+  - 228: GREAT GRAY OWL
+  - 229: GREAT JACAMAR
+  - 230: GREAT KISKADEE
+  - 231: GREAT POTOO
+  - 232: GREAT TINAMOU
+  - 233: GREAT XENOPS
+  - 234: GREATER PEWEE
+  - 235: GREATOR SAGE GROUSE
+  - 236: GREEN BROADBILL
+  - 237: GREEN JAY
+  - 238: GREEN MAGPIE
+  - 239: GREY CUCKOOSHRIKE
+  - 240: GREY PLOVER
+  - 241: GROVED BILLED ANI
+  - 242: GUINEA TURACO
+  - 243: GUINEAFOWL
+  - 244: GURNEYS PITTA
+  - 245: GYRFALCON
+  - 246: HAMERKOP
+  - 247: HARLEQUIN DUCK
+  - 248: HARLEQUIN QUAIL
+  - 249: HARPY EAGLE
+  - 250: HAWAIIAN GOOSE
+  - 251: HAWFINCH
+  - 252: HELMET VANGA
+  - 253: HEPATIC TANAGER
+  - 254: HIMALAYAN BLUETAIL
+  - 255: HIMALAYAN MONAL
+  - 256: HOATZIN
+  - 257: HOODED MERGANSER
+  - 258: HOOPOES
+  - 259: HORNED GUAN
+  - 260: HORNED LARK
+  - 261: HORNED SUNGEM
+  - 262: HOUSE FINCH
+  - 263: HOUSE SPARROW
+  - 264: HYACINTH MACAW
+  - 265: IBERIAN MAGPIE
+  - 266: IBISBILL
+  - 267: IMPERIAL SHAQ
+  - 268: INCA TERN
+  - 269: INDIAN BUSTARD
+  - 270: INDIAN PITTA
+  - 271: INDIAN ROLLER
+  - 272: INDIAN VULTURE
+  - 273: INDIGO BUNTING
+  - 274: INDIGO FLYCATCHER
+  - 275: INLAND DOTTEREL
+  - 276: IVORY BILLED ARACARI
+  - 277: IVORY GULL
+  - 278: IWI
+  - 279: JABIRU
+  - 280: JACK SNIPE
+  - 281: JANDAYA PARAKEET
+  - 282: JAPANESE ROBIN
+  - 283: JAVA SPARROW
+  - 284: JOCOTOCO ANTPITTA
+  - 285: KAGU
+  - 286: KAKAPO
+  - 287: KILLDEAR
+  - 288: KING EIDER
+  - 289: KING VULTURE
+  - 290: KIWI
+  - 291: KOOKABURRA
+  - 292: LARK BUNTING
+  - 293: LAZULI BUNTING
+  - 294: LESSER ADJUTANT
+  - 295: LILAC ROLLER
+  - 296: LITTLE AUK
+  - 297: LOGGERHEAD SHRIKE
+  - 298: LONG-EARED OWL
+  - 299: MAGPIE GOOSE
+  - 300: MALABAR HORNBILL
+  - 301: MALACHITE KINGFISHER
+  - 302: MALAGASY WHITE EYE
+  - 303: MALEO
+  - 304: MALLARD DUCK
+  - 305: MANDRIN DUCK
+  - 306: MANGROVE CUCKOO
+  - 307: MARABOU STORK
+  - 308: MASKED BOOBY
+  - 309: MASKED LAPWING
+  - 310: MCKAYS BUNTING
+  - 311: MIKADO  PHEASANT
+  - 312: MOURNING DOVE
+  - 313: MYNA
+  - 314: NICOBAR PIGEON
+  - 315: NOISY FRIARBIRD
+  - 316: NORTHERN BEARDLESS TYRANNULET
+  - 317: NORTHERN CARDINAL
+  - 318: NORTHERN FLICKER
+  - 319: NORTHERN FULMAR
+  - 320: NORTHERN GANNET
+  - 321: NORTHERN GOSHAWK
+  - 322: NORTHERN JACANA
+  - 323: NORTHERN MOCKINGBIRD
+  - 324: NORTHERN PARULA
+  - 325: NORTHERN RED BISHOP
+  - 326: NORTHERN SHOVELER
+  - 327: OCELLATED TURKEY
+  - 328: OKINAWA RAIL
+  - 329: ORANGE BRESTED BUNTING
+  - 330: ORIENTAL BAY OWL
+  - 331: OSPREY
+  - 332: OSTRICH
+  - 333: OVENBIRD
+  - 334: OYSTER CATCHER
+  - 335: PAINTED BUNTING
+  - 336: PALILA
+  - 337: PARADISE TANAGER
+  - 338: PARAKETT  AKULET
+  - 339: PARUS MAJOR
+  - 340: PATAGONIAN SIERRA FINCH
+  - 341: PEACOCK
+  - 342: PEREGRINE FALCON
+  - 343: PHILIPPINE EAGLE
+  - 344: PINK ROBIN
+  - 345: POMARINE JAEGER
+  - 346: PUFFIN
+  - 347: PURPLE FINCH
+  - 348: PURPLE GALLINULE
+  - 349: PURPLE MARTIN
+  - 350: PURPLE SWAMPHEN
+  - 351: PYGMY KINGFISHER
+  - 352: QUETZAL
+  - 353: RAINBOW LORIKEET
+  - 354: RAZORBILL
+  - 355: RED BEARDED BEE EATER
+  - 356: RED BELLIED PITTA
+  - 357: RED BROWED FINCH
+  - 358: RED FACED CORMORANT
+  - 359: RED FACED WARBLER
+  - 360: RED FODY
+  - 361: RED HEADED DUCK
+  - 362: RED HEADED WOODPECKER
+  - 363: RED HONEY CREEPER
+  - 364: RED NAPED TROGON
+  - 365: RED TAILED HAWK
+  - 366: RED TAILED THRUSH
+  - 367: RED WINGED BLACKBIRD
+  - 368: RED WISKERED BULBUL
+  - 369: REGENT BOWERBIRD
+  - 370: RING-NECKED PHEASANT
+  - 371: ROADRUNNER
+  - 372: ROBIN
+  - 373: ROCK DOVE
+  - 374: ROSY FACED LOVEBIRD
+  - 375: ROUGH LEG BUZZARD
+  - 376: ROYAL FLYCATCHER
+  - 377: RUBY THROATED HUMMINGBIRD
+  - 378: RUDY KINGFISHER
+  - 379: RUFOUS KINGFISHER
+  - 380: RUFUOS MOTMOT
+  - 381: SAMATRAN THRUSH
+  - 382: SAND MARTIN
+  - 383: SANDHILL CRANE
+  - 384: SATYR TRAGOPAN
+  - 385: SCARLET CROWNED FRUIT DOVE
+  - 386: SCARLET IBIS
+  - 387: SCARLET MACAW
+  - 388: SCARLET TANAGER
+  - 389: SHOEBILL
+  - 390: SHORT BILLED DOWITCHER
+  - 391: SKUA
+  - 392: SMITHS LONGSPUR
+  - 393: SNOWY EGRET
+  - 394: SNOWY OWL
+  - 395: SNOWY PLOVER
+  - 396: SORA
+  - 397: SPANGLED COTINGA
+  - 398: SPLENDID WREN
+  - 399: SPOON BILED SANDPIPER
+  - 400: SPOONBILL
+  - 401: SPOTTED CATBIRD
+  - 402: SRI LANKA BLUE MAGPIE
+  - 403: STEAMER DUCK
+  - 404: STORK BILLED KINGFISHER
+  - 405: STRAWBERRY FINCH
+  - 406: STRIPED OWL
+  - 407: STRIPPED MANAKIN
+  - 408: STRIPPED SWALLOW
+  - 409: SUPERB STARLING
+  - 410: SWINHOES PHEASANT
+  - 411: TAILORBIRD
+  - 412: TAIWAN MAGPIE
+  - 413: TAKAHE
+  - 414: TASMANIAN HEN
+  - 415: TEAL DUCK
+  - 416: TIT MOUSE
+  - 417: TOUCHAN
+  - 418: TOWNSENDS WARBLER
+  - 419: TREE SWALLOW
+  - 420: TRICOLORED BLACKBIRD
+  - 421: TROPICAL KINGBIRD
+  - 422: TRUMPTER SWAN
+  - 423: TURKEY VULTURE
+  - 424: TURQUOISE MOTMOT
+  - 425: UMBRELLA BIRD
+  - 426: VARIED THRUSH
+  - 427: VEERY
+  - 428: VENEZUELIAN TROUPIAL
+  - 429: VERMILION FLYCATHER
+  - 430: VICTORIA CROWNED PIGEON
+  - 431: VIOLET GREEN SWALLOW
+  - 432: VIOLET TURACO
+  - 433: VULTURINE GUINEAFOWL
+  - 434: WALL CREAPER
+  - 435: WATTLED CURASSOW
+  - 436: WATTLED LAPWING
+  - 437: WHIMBREL
+  - 438: WHITE BROWED CRAKE
+  - 439: WHITE CHEEKED TURACO
+  - 440: WHITE CRESTED HORNBILL
+  - 441: WHITE NECKED RAVEN
+  - 442: WHITE TAILED TROPIC
+  - 443: WHITE THROATED BEE EATER
+  - 444: WILD TURKEY
+  - 445: WILSONS BIRD OF PARADISE
+  - 446: WOOD DUCK
+  - 447: YELLOW BELLIED FLOWERPECKER
+  - 448: YELLOW CACIQUE
+  - 449: YELLOW HEADED BLACKBIRD
 checkpoint_path: C:\Users\orgin\XAI-study\heatmap_tool\checkpoints\resnet34\bird-resnet34.pth
 description: BirdResNet34 trained on BirdCLEF (450 classes)
 model_structure: &id001

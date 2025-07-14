@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
-
+from explainers.utils.get_layer_name import get_layer_by_name
 
 class CAM(nn.Module):
     def __init__(self, model, config_dict):
@@ -31,9 +31,15 @@ class CAM(nn.Module):
         def forward_hook(module, input, output):
             self.feature_maps = output
         
-        # ResNet의 backbone에서 타겟 레이어를 찾아서 훅 등록
-        target_layer = dict([*self.model.backbone.named_modules()])[self.target_layer_name]
+        # backbone이 있으면 backbone에서, 없으면 model 전체에서 찾기
+        if hasattr(self.model, "backbone"):
+            modules = dict([*self.model.backbone.named_modules()])
+        else:
+            modules = dict([*self.model.named_modules()])
 
+        if self.target_layer_name not in modules:
+            raise ValueError(f"타겟 레이어 '{self.target_layer_name}'을(를) 찾을 수 없습니다.")
+        target_layer = modules[self.target_layer_name]
         target_layer.register_forward_hook(forward_hook)
     
     def forward(self, x):
@@ -61,7 +67,16 @@ class CAM(nn.Module):
                 class_idx = torch.argmax(output, dim=1).item()
 
             # FC 레이어의 가중치 가져오기
-            fc_weights = self.model.backbone.fc.weight  # ResNet의 fc 레이어
+            if hasattr(self.model, "backbone") and hasattr(self.model.backbone, "fc"):
+                # torchvision resnet 계열
+                fc_layer = get_layer_by_name(self.model, "fc") or self.model.backbone.fc
+                fc_weights = fc_layer.weight
+            else:
+                # CustomResNet34 등
+                fc_layer = get_layer_by_name(self.model, "classifier.3")
+                if fc_layer is None:
+                    raise RuntimeError("FC 레이어(classifier.4)를 찾을 수 없습니다.")
+                fc_weights = fc_layer.weight
             target_weight = fc_weights[class_idx]  # 해당 클래스의 가중치
             # feature_maps가 None인지 확인
             if self.feature_maps is None:

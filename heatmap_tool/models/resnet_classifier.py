@@ -49,6 +49,7 @@ class ResNetClassifier(nn.Module):
                 pass
             else:
                 # 커스텀 maxpool 설정
+                print("Custom maxpool")
                 self.backbone.maxpool = nn.MaxPool2d(
                     kernel_size=maxpool_type.get('kernel_size', 3),
                     stride=maxpool_type.get('stride', 2),
