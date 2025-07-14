@@ -28,7 +28,7 @@ explainer_dict:
   ig:
     class: IG
     description: "Integrated Gradients"
-    cmap: "gray"
+    cmap: "jet"
     model:
       ResNet18:
         steps: 30

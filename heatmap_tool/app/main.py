@@ -382,8 +382,8 @@ class XAIGUI(QMainWindow):
                 ax.imshow(heatmap, cmap=cmap)
             else:
                 # 나머지는 원본 위에 heatmap을 겹침
-                ax.imshow(img_array)
-                ax.imshow(heatmap, cmap=cmap, alpha=0.6)
+                ax.imshow(img_array, alpha=0.4)
+                ax.imshow(heatmap, cmap=cmap, alpha=0.8)
             
             # 현재 선택된 클래스 이름 가져오기
             target_class_index = self.targetClassCombo.currentData()

@@ -72,7 +72,7 @@ class CAM(nn.Module):
                 fc_layer = get_layer_by_name(self.model, "fc") or self.model.backbone.fc
                 fc_weights = fc_layer.weight
             else:
-                # CustomResNet34 등
+                # CustomResNet34
                 fc_layer = get_layer_by_name(self.model, "classifier.3")
                 if fc_layer is None:
                     raise RuntimeError("FC 레이어(classifier.4)를 찾을 수 없습니다.")
@@ -90,14 +90,14 @@ class CAM(nn.Module):
             for i, weight in enumerate(target_weight):
                 cam += weight * feature_map[i]
             
-            # ReLU 적용 (음수 값 제거)
+            # ReLU
             cam = F.relu(cam)
             
             # 원본 이미지 크기로 리사이즈
             cam = F.interpolate(
                 cam.unsqueeze(0).unsqueeze(0),
                 size=(input_tensor.shape[2], input_tensor.shape[3]),
-                mode='bicubic',  # bilinear 대신 bicubic
+                mode='bilinear', # bilinear 대신 bicubic
                 align_corners=False
             )
             
