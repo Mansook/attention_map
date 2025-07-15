@@ -22,8 +22,11 @@ class GradCAM(nn.Module):
         def backward_hook(module, grad_input, grad_output):
             self.gradients = grad_output[0]
             
-        target_layer = dict([*self.model.backbone.named_modules()])[self.target_layer_name]
-        
+        if hasattr(self.model, "backbone"):
+            target_layer = dict([*self.model.backbone.named_modules()])[self.target_layer_name]
+        else:
+            target_layer = dict([*self.model.named_modules()])[self.target_layer_name]
+            
         target_layer.register_forward_hook(forward_hook)
         target_layer.register_full_backward_hook(backward_hook)
 
