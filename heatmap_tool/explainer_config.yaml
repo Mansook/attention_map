@@ -17,7 +17,7 @@ explainer_dict:
       ResNet34:
         target_layer: "res16"
     default_target_layer: "layer4"
-    
+
   rise:
     class: RISE
     description: "Randomized Input Sampling with Expectation"
@@ -34,6 +34,18 @@ explainer_dict:
     model:
       ResNet18:
         steps: 30
+
+  smoothgrad:
+    class: SmoothGrad
+    description: "Smooth-Grad"
+    camp: "jet"
+    model:
+      ResNet18:
+        num_sample: 10
+        var: 0.125
+      ResNet34:
+        num_sample: 10
+        var: 0.125
   # 필요시 추가 explainer
   # my_custom_xai:
   #   class: MyCustomXAI

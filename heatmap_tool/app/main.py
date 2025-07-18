@@ -1,29 +1,38 @@
 # -*- coding: utf-8 -*-
-import sys
 import os
-import yaml
-import torch
-import numpy as np
-from PIL import Image, ImageQt
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QFileDialog, QMessageBox, QToolTip)
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QFont, QCursor
+import re
+import sys
+
 import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import yaml
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from PIL import Image, ImageOps, ImageQt
 from PyQt5 import uic
-from PIL import ImageOps
-from utils.explainer_add_dialog import ExplainerAddDialog  # 다이얼로그는 utils에 구현한다고 가정
-import re
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtGui import QCursor, QFont
+from PyQt5.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QMainWindow,
+    QMessageBox,
+    QToolTip,
+)
+from utils.explainer_add_dialog import (
+    ExplainerAddDialog,  # 다이얼로그는 utils에 구현한다고 가정
+)
 
 # 상위 디렉토리 모듈들 import
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from explainers import CAM, GradCAM, RISE, IG
-from models import ResNetClassifier, CustomResNet34
 from dataset.datasetLoader import get_dataloaders
+from explainers import CAM, IG, RISE, GradCAM, SmoothGrad
+from models import CustomResNet34, ResNetClassifier
+from utils.explainer_tooltip import make_explainer_tooltip
 from utils.set_korean import setup_korean_font
 from utils.xaiworker import XAIWorker
-from utils.explainer_tooltip import make_explainer_tooltip
+
 
 class XAIGUI(QMainWindow):
     def __init__(self):
@@ -114,7 +123,6 @@ class XAIGUI(QMainWindow):
             elif model_name.lower() == "resnet34":
                 print("Trying resnet34 load") 
                 self.model = CustomResNet34(num_classes=num_classes)
-
             else:
                 
                 ##모델 추가##
