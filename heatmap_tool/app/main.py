@@ -61,7 +61,6 @@ class XAIGUI(QMainWindow):
         self.num_classes = 0
         self.class_map = {}
         self.predicted_class = None
-        self.predictedClassLabel = ""
         self.current_explainees = {}
         
         
@@ -180,20 +179,23 @@ class XAIGUI(QMainWindow):
 
     def open_add_explainer_dialog(self):
         # 이미 로드된 explainer_config 사용
-        dialog = ExplainerAddDialog(self.explainer_config, self.config['model'], self.class_map, self)
+        dialog = ExplainerAddDialog(self.explainer_config, self.config['model'], self.class_map, current_predict=self.predicted_class, parent=self)
         if dialog.exec_():
             explainer_name, params, target_class = dialog.get_explainer_info()
+            vis_type = ""
             # 파라미터 타입 변환
             for k, v in params.items():
                 try:
                     params[k] = eval(v)
+                    if k=="type":
+                        vis_type = v
                 except:
                     pass
             explainer_class = eval(self.explainer_config['explainer_dict'][explainer_name]['class'])
             # ---------- 중복 이름 처리 ----------
-            # 고유 이름 구성: "{explainer} - {target_class} - {version}"
+            # 고유 이름 구성: "{explainer} - {target_class} - {visualization type} : {version}"
             class_name = self.class_map.get(target_class, f"class{target_class}")
-            base_key = f"[{explainer_name}] target-{target_class}-{class_name}"
+            base_key = f"[{explainer_name}] target-{target_class}-{vis_type}:{class_name}"
             existing = [k for k in self.explainers if k.startswith(base_key)]
             version = len(existing)
             full_name = f"{base_key}{version}"
@@ -248,8 +250,9 @@ class XAIGUI(QMainWindow):
         if self.model is None:
             QMessageBox.warning(self, "경고", "먼저 체크포인트를 로드해주세요.")
             return
+        default_path = self.config['dataset_config'].get('root', "") if self.config else ""
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "이미지 파일 선택", "", "Image files (*.png *.jpg *.jpeg *.bmp *.tiff)"
+            self, "이미지 파일 선택", default_path, "Image files (*.png *.jpg *.jpeg *.bmp *.tiff)"
         )
         if file_path:
             try:
@@ -413,19 +416,14 @@ class XAIGUI(QMainWindow):
             name_no_number = re.sub(r'\d+$', '', name)
             cmap = self.explainer_dict.get(name_no_number, {}).get('cmap', 'jet')
             
-            if cmap == "gray":
-                # IG는 원본과 heatmap을 겹치지 않음
-                ax.imshow(heatmap, cmap=cmap)
-            else:
-                # 나머지는 원본 위에 heatmap을 겹침
-                ax.imshow(img_array, alpha=0.4)
-                ax.imshow(heatmap, cmap=cmap, alpha=0.8)
+            ax.imshow(img_array, alpha=0.4)
+            ax.imshow(heatmap, cmap=cmap, alpha=0.8)
             
             # 현재 선택된 클래스 이름 가져오기
             target_class_index = self.targetClassCombo.currentData()
             class_name = get_class_name_by_index(self.config,target_class_index)
             
-            ax.set_title(f"{name.upper()} - {class_name}")
+            ax.set_title(f"{name.upper()} - ")
             ax.axis('off')
             canvas = FigureCanvas(fig)
             self.vizLayout.addWidget(canvas, row, col)

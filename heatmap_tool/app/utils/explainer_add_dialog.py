@@ -10,12 +10,13 @@ from PyQt5.QtWidgets import (
 
 
 class ExplainerAddDialog(QDialog):
-    def __init__(self, explainer_config, model_name, class_map, parent=None):
+    def __init__(self, explainer_config, model_name, class_map,  current_predict=None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Explainer 추가")
         self.explainer_config = explainer_config
         self.model_name = model_name
         self.class_map = class_map  # ✅ class_map 저장
+        self.current_predict = current_predict  # current_predict 저장
         self.selected_explainer = None
         self.param_inputs = {}
         self.init_ui()
@@ -37,6 +38,12 @@ class ExplainerAddDialog(QDialog):
             self.class_combo.addItem(f"{idx}: {name}", idx)
         layout.addWidget(self.class_combo)
 
+        # Type 선택 추가
+        layout.addWidget(QLabel("Type 선택"))
+        self.type_combo = QComboBox()
+        self.type_combo.addItems(["both", "abs", "positive", "negative"])
+        layout.addWidget(self.type_combo)
+
         # 파라미터 입력 폼
         self.form = QFormLayout()
         layout.addLayout(self.form)
@@ -48,6 +55,13 @@ class ExplainerAddDialog(QDialog):
 
         self.setLayout(layout)
         self.update_form(self.combo.currentText())
+        
+        # current_predict가 있으면 해당 클래스 선택
+        if hasattr(self, 'current_predict') and self.current_predict is not None:
+            for i in range(self.class_combo.count()):
+                if self.class_combo.itemData(i) == self.current_predict:
+                    self.class_combo.setCurrentIndex(i)
+                    break
 
     def update_form(self, explainer_name):
         # 폼 초기화
@@ -68,5 +82,7 @@ class ExplainerAddDialog(QDialog):
     def get_explainer_info(self):
         explainer_name = self.combo.currentText()
         params = {k: v.text() for k, v in self.param_inputs.items()}
+        # type 파라미터 추가
+        params['type'] = self.type_combo.currentText()
         target_class = self.class_combo.currentData()  # ✅ 선택된 클래스 index
         return explainer_name, params, target_class
