@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
+from explainers.utils.normalize_heatmap import process_heatmap_by_type
 
 class GradCAM(nn.Module):
     def __init__(self, model, config_dict):
@@ -10,6 +11,7 @@ class GradCAM(nn.Module):
         # config_dict에서 설정 가져오기
         self.target_layer_name = config_dict.get('target_layer', 'layer4')
         self.input_size = tuple(config_dict.get('input_size', (96, 96)))
+        self.type = config_dict.get('type', 'both')  # type 추가
         
         self.feature_maps = None
         self.gradients = None
@@ -57,21 +59,30 @@ class GradCAM(nn.Module):
             
         weights = torch.mean(gradients, dim=(2, 3), keepdim=True)
         cam = torch.sum(weights * feature_maps, dim=1)  # [1, 6, 6]
-        cam = F.relu(cam)
+        
+        # type에 따라 처리 (ReLU 제거하고 utils 함수 사용)
+        if self.type == 'positive':
+            cam = F.relu(cam)
+        elif self.type == 'negative':
+            cam = -F.relu(-cam)
+        elif self.type == 'abs':
+            cam = torch.abs(cam)
+        # 'both'는 원본 값 그대로 사용
+        
         cam = cam.unsqueeze(1)  # [1, 1, 6, 6] - 채널 차원 추가
         
         # 원본 이미지 크기로 업샘플링
         input_size = input_tensor.shape[2:]  # (H, W)
         cam = F.interpolate(cam, size=input_size, mode='bilinear', align_corners=False)
-        cam = cam.squeeze().detach().cpu().numpy()
         
-        cam = cam - cam.min()
-        if cam.max() > 0:
-            cam = cam / cam.max()
+        # utils의 통합 처리 함수 사용
+        cam = process_heatmap_by_type(cam.squeeze(), self.type)
             
         return cam
+        
     def set_config_dict(self, config_dict):
         self.target_layer_name = config_dict.get('target_layer', self.target_layer_name)
         self.input_size = config_dict.get('input_size', self.input_size)
+        self.type = config_dict.get('type', self.type)  # type 추가
         # target_layer_name이 바뀌면 훅 재등록 필요
         self._register_hook()

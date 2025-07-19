@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from explainers.utils.normalize_heatmap import process_heatmap_by_type
 
 
 class SmoothGrad(nn.Module):
@@ -12,6 +13,7 @@ class SmoothGrad(nn.Module):
         self.input_size = tuple(config_dict.get('input_size', (96, 96)))
         self.num_sample = config_dict.get('num_sample',10)
         self.var = config_dict.get('var',0.125)
+        self.type = config_dict.get('type', 'both')  # type 추가
 
     def generate(self, input_tensor, class_idx=None):
         
@@ -42,15 +44,26 @@ class SmoothGrad(nn.Module):
         
         avg_gradients = total_gradients/self.num_sample
         
-        saliency = avg_gradients.abs().mean(dim=1)
-        saliency = saliency.squeeze().detach().cpu().numpy()
-        saliency = saliency - saliency.min()
-        if saliency.max() > 0:
-            saliency = saliency / saliency.max()
+        # type에 따라 처리
+        if self.type == 'abs':
+            saliency = avg_gradients.abs().mean(dim=1)
+        elif self.type == 'positive':
+            saliency = F.relu(avg_gradients).mean(dim=1)
+        elif self.type == 'negative':
+            saliency = -F.relu(-avg_gradients).mean(dim=1)
+        elif self.type == 'both':
+            saliency = avg_gradients.mean(dim=1)
+        else:
+            saliency = avg_gradients.mean(dim=1)
+        
+        # utils의 통합 처리 함수 사용
+        saliency = process_heatmap_by_type(saliency.squeeze(), self.type)
 
         return saliency
+        
     def set_config_dict(self, config_dict):
         self.input_size = config_dict.get('input_size', self.input_size)
         self.num_sample = config_dict.get('num_sample', self.num_sample)
         self.var = config_dict.get('var',self.var)
+        self.type = config_dict.get('type', self.type)  # type 추가
 

@@ -25,7 +25,7 @@ model_structure: &id001
   maxpool: identity
 dataset_config:
   name: STL10
-  root: ./data/stl10_binary
+  root: C:\Users\orgin\Desktop\ForTest\stl10_test
   num_classes: 10
   batch_size: 128
   num_workers: 10

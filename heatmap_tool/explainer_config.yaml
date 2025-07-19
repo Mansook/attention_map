@@ -3,6 +3,7 @@ explainer_dict:
     class: CAM
     description: "Class Activation Mapping"
     cmap: "jet"
+    type : "positive"
     model:
       ResNet18: {}
       ResNet34:
@@ -11,6 +12,7 @@ explainer_dict:
     class: GradCAM
     description: "Gradient-weighted Class Activation Mapping"
     cmap: "jet"
+    type : "positive"
     model:
       ResNet18:
         target_layer: "layer4"
@@ -29,6 +31,7 @@ explainer_dict:
         p1: 0.1
   ig:
     class: IG
+    type : "positive"
     description: "Integrated Gradients"
     cmap: "jet"
     model:
@@ -37,6 +40,7 @@ explainer_dict:
 
   smoothgrad:
     class: SmoothGrad
+    type : "positive"
     description: "Smooth-Grad"
     camp: "jet"
     model:

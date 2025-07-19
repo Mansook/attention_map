@@ -17,7 +17,7 @@
     maxpool: default
   dataset_config:
     name: spwar
-    root: ./data/spwar
+    root: C:\Users\orgin\Desktop\ForTest\spwar_test
     num_classes: 2
     batch_size: 64
     num_workers: 10

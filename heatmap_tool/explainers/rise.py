@@ -4,6 +4,7 @@ import numpy as np
 import random
 from torchvision.transforms.functional import InterpolationMode
 from torchvision.transforms.functional import resize
+from explainers.utils.normalize_heatmap import process_heatmap_by_type
 
 class RISE:
     def __init__(self, model,config_dict):
@@ -19,6 +20,7 @@ class RISE:
         self.s = config_dict.get('s', 8)
         self.p1 = config_dict.get('p1', 0.1)
         self.input_size = tuple(config_dict.get('input_size', (96, 96)))
+        self.type = config_dict.get('type', 'both')  # type 추가
 
         self.device = next(model.parameters()).device
         self.masks = self.generate_masks()  # [N, H, W]
@@ -52,11 +54,16 @@ class RISE:
             scores = outputs[:, class_idx]  # [N]
 
         saliency = torch.sum(scores.view(-1, 1, 1) * self.masks, dim=0)
-        saliency = saliency / saliency.max()
-        return saliency.detach().cpu()
+        
+        # utils의 통합 처리 함수 사용
+        saliency = process_heatmap_by_type(saliency, self.type)
+        
+        return saliency
+        
     def set_config_dict(self, config_dict):
         self.N = config_dict.get('N', self.N)
         self.s = config_dict.get('s', self.s)
         self.p1 = config_dict.get('p1', self.p1)
         self.input_size = config_dict.get('input_size', self.input_size)
+        self.type = config_dict.get('type', self.type)  # type 추가
         self.masks = self.generate_masks()

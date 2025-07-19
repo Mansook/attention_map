@@ -2,6 +2,7 @@ from configparser import InterpolationError
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from explainers.utils.normalize_heatmap import process_heatmap_by_type
 
 class IG(nn.Module):
     def __init__(self,model,config_dict):
@@ -9,6 +10,7 @@ class IG(nn.Module):
         self.model = model.eval()
         self.input_size = tuple(config_dict.get('input_size',(96,96)))
         self.steps = config_dict.get('steps',10)
+        self.type = config_dict.get('type', 'both')  # type 추가
         print("steps : ",self.steps)
         self.baseline = None
         self.feature_maps = None
@@ -54,14 +56,15 @@ class IG(nn.Module):
         avg_gradients = gradients_sum / self.steps
         ig_attribution = (input_tensor - self.baseline) * avg_gradients
         ig_map = torch.mean(ig_attribution, dim=1)  # [1, H, W]
-        ig_map = ig_map.squeeze().detach().cpu().numpy()
-        ig_map = ig_map - ig_map.min()
-        if ig_map.max() > 0:
-            ig_map = ig_map / ig_map.max()
+        
+        # utils의 통합 처리 함수 사용
+        ig_map = process_heatmap_by_type(ig_map.squeeze(), self.type)
+        
         return ig_map
 
     def set_config_dict(self, config_dict):
         """설정 업데이트"""
         self.steps = config_dict.get('steps', self.steps)
         self.input_size = config_dict.get('input_size', self.input_size)
+        self.type = config_dict.get('type', self.type)  # type 추가
     

@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
 from explainers.utils.get_layer_name import get_layer_by_name
+from explainers.utils.normalize_heatmap import process_heatmap_by_type
 
 class CAM(nn.Module):
     def __init__(self, model, config_dict):
@@ -11,7 +12,7 @@ class CAM(nn.Module):
         
         Args:
             model: 분석할 모델 (ResNetClassifier 등)
-            config_dict: 설정 딕셔너리 (target_layer_name, input_size 등 포함)
+            config_dict: 설정 딕셔너리 (target_layer_name, input_size, type 등 포함)
         """
         super(CAM, self).__init__()
         self.model = model.eval()
@@ -19,6 +20,7 @@ class CAM(nn.Module):
         # config_dict에서 설정 가져오기
         self.target_layer_name = config_dict.get('target_layer', 'layer4')
         self.input_size = tuple(config_dict.get('input_size', (96, 96)))
+        self.type = config_dict.get('type', 'both')  # 'abs', 'positive', 'negative', 'both'
     
         # 타겟 레이어의 출력을 저장할 변수 초기화
         self.feature_maps = None
@@ -90,31 +92,23 @@ class CAM(nn.Module):
             for i, weight in enumerate(target_weight):
                 cam += weight * feature_map[i]
             
-            # ReLU
-            cam = F.relu(cam)
-            
             # 원본 이미지 크기로 리사이즈
             cam = F.interpolate(
                 cam.unsqueeze(0).unsqueeze(0),
                 size=(input_tensor.shape[2], input_tensor.shape[3]),
-                mode='bilinear', # bilinear 대신 bicubic
+                mode='bilinear',
                 align_corners=False
             )
             
-            # CPU로 이동하고 numpy로 변환
-            cam = cam.squeeze().cpu().numpy()
+            # utils의 통합 처리 함수 사용
+            cam = process_heatmap_by_type(cam.squeeze(), self.type)
             
-            # ReLU 이후 값 분포 확인 및 대비 향상 정규화
-            cam = np.maximum(cam, 0)
-            if cam.max() > 0:
-                vmax = np.percentile(cam, 99)
-                vmin = np.percentile(cam, 1)
-                cam = np.clip((cam - vmin) / (vmax - vmin + 1e-8), 0, 1)
             return cam
             
     def set_config_dict(self, config_dict):
         self.target_layer_name = config_dict.get('target_layer', self.target_layer_name)
         self.input_size = config_dict.get('input_size', self.input_size)
+        self.type = config_dict.get('type', self.type)
         # target_layer_name이 바뀌면 훅 재등록 필요
         self._register_hook()
                 
