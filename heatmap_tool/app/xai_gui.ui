@@ -68,9 +68,16 @@
            </widget>
           </item>
           <item>
+           <widget class="QLabel" name="predictedClassLabel">
+            <property name="text">
+             <string>현재 예측 클래스:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QLabel" name="targetClassLabel">
             <property name="text">
-             <string>타겟 클래스:</string>
+             <string>클래스 로짓:</string>
             </property>
            </widget>
           </item>

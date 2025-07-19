@@ -1,27 +1,51 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QComboBox, QFormLayout, QLineEdit, QPushButton, QLabel
+from PyQt5.QtWidgets import (
+    QComboBox,
+    QDialog,
+    QFormLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+)
+
 
 class ExplainerAddDialog(QDialog):
-    def __init__(self, explainer_config, model_name, parent=None):
+    def __init__(self, explainer_config, model_name, class_map, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Explainer 추가")
         self.explainer_config = explainer_config
         self.model_name = model_name
+        self.class_map = class_map  # ✅ class_map 저장
         self.selected_explainer = None
         self.param_inputs = {}
         self.init_ui()
 
     def init_ui(self):
         layout = QVBoxLayout()
+
+        # Explainer 종류 선택
+        layout.addWidget(QLabel("Explainer 종류 선택"))
         self.combo = QComboBox()
         self.combo.addItems(self.explainer_config['explainer_dict'].keys())
         self.combo.currentTextChanged.connect(self.update_form)
-        layout.addWidget(QLabel("Explainer 종류 선택"))
         layout.addWidget(self.combo)
+
+        # 클래스 선택 추가
+        layout.addWidget(QLabel("Target 클래스 선택"))
+        self.class_combo = QComboBox()
+        for idx, name in self.class_map.items():
+            self.class_combo.addItem(f"{idx}: {name}", idx)
+        layout.addWidget(self.class_combo)
+
+        # 파라미터 입력 폼
         self.form = QFormLayout()
         layout.addLayout(self.form)
+
+        # 확인 버튼
         self.ok_btn = QPushButton("확인")
         self.ok_btn.clicked.connect(self.accept)
         layout.addWidget(self.ok_btn)
+
         self.setLayout(layout)
         self.update_form(self.combo.currentText())
 
@@ -30,9 +54,9 @@ class ExplainerAddDialog(QDialog):
         while self.form.rowCount():
             self.form.removeRow(0)
         self.param_inputs.clear()
+
         config = self.explainer_config['explainer_dict'][explainer_name]['model'].get(self.model_name, None)
         if config is None:
-            # 값이 없으면 빈 dict로 처리 (혹은 안내 메시지)
             return
         if isinstance(config, str):
             config = {'target_layer': config}
@@ -44,4 +68,5 @@ class ExplainerAddDialog(QDialog):
     def get_explainer_info(self):
         explainer_name = self.combo.currentText()
         params = {k: v.text() for k, v in self.param_inputs.items()}
-        return explainer_name, params
+        target_class = self.class_combo.currentData()  # ✅ 선택된 클래스 index
+        return explainer_name, params, target_class

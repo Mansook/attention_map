@@ -1,16 +1,16 @@
 import torch
 from PyQt5.QtCore import QThread, pyqtSignal
 
+
 class XAIWorker(QThread):
     progress = pyqtSignal(int)
     finished = pyqtSignal(dict)
     error = pyqtSignal(str)
-    def __init__(self, model, explainers, image, target_class):
+    def __init__(self, model, explainers, image):
         super().__init__()
         self.model = model
         self.explainers = explainers
         self.image = image
-        self.target_class = target_class
         print("image size : ", self.image.shape)
     def run(self):
         """
@@ -25,11 +25,11 @@ class XAIWorker(QThread):
         try:
             results = {}
             total_explainers = len(self.explainers)
-            for i, (name, explainer) in enumerate(self.explainers.items()):
+            for i, (name, (explainer, target_class)) in enumerate(self.explainers.items()):
                 # 진행률을 메인 스레드로 emit (GUI 업데이트용)
                 self.progress.emit(int((i / total_explainers) * 100))
                 # 각 explainer의 generate 메서드 실행 (여기서 연산 발생, 순차적임)
-                heatmap = explainer.generate(self.image, class_idx=self.target_class)
+                heatmap = explainer.generate(self.image, class_idx=target_class)
                 # 결과가 torch.Tensor면 numpy로 변환
                 if isinstance(heatmap, torch.Tensor):
                     heatmap = heatmap.squeeze().cpu().numpy()

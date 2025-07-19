@@ -20,9 +20,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QToolTip,
 )
-from utils.explainer_add_dialog import (
-    ExplainerAddDialog,  # 다이얼로그는 utils에 구현한다고 가정
-)
+from utils.explainer_add_dialog import ExplainerAddDialog  # 다이얼로그는 utils에 구현한다고 가정
 
 # 상위 디렉토리 모듈들 import
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -30,6 +28,7 @@ from dataset.datasetLoader import get_dataloaders
 from explainers import CAM, IG, RISE, GradCAM, SmoothGrad
 from models import CustomResNet34, ResNetClassifier
 from utils.explainer_tooltip import make_explainer_tooltip
+from utils.get_class_name_by_index import get_class_name_by_index
 from utils.set_korean import setup_korean_font
 from utils.xaiworker import XAIWorker
 
@@ -59,7 +58,10 @@ class XAIGUI(QMainWindow):
         self.heatmap_results = {}
         self.explainers = {}
         self.worker = None
-        
+        self.num_classes = 0
+        self.class_map = {}
+        self.predicted_class = None
+        self.predictedClassLabel = ""
         self.current_explainees = {}
         
         
@@ -71,6 +73,9 @@ class XAIGUI(QMainWindow):
         self.runXaiBtn.clicked.connect(self.run_xai)
         self.targetClassCombo.setEnabled(False)
         self.runXaiBtn.setEnabled(False)
+        # predictedClassLabel 바인딩 (QLabel로 명확하게)
+        from PyQt5.QtWidgets import QLabel
+        self.predictedClassLabel = self.findChild(QLabel, "predictedClassLabel")
         # Explainer 관리 버튼 바인딩
         self.addExplainerBtn.clicked.connect(self.open_add_explainer_dialog)
         #self.removeExplainerBtn.clicked.connect(self.remove_selected_explainer)
@@ -81,30 +86,52 @@ class XAIGUI(QMainWindow):
         self.explainerListWidget.itemEntered.connect(self.show_explainer_info_tooltip)
 
     def load_checkpoint(self):
-        default_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "configs", "checkpoints")
+        # 기본 체크포인트 경로 설정
+        default_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "configs", "checkpoints"
+        )
+        
         file_path, _ = QFileDialog.getOpenFileName(
             self, "체크포인트 YAML 파일 선택", default_path, "YAML files (*.yaml *.yml)"
         )
-        if file_path:
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    loaded_config = yaml.load(f, Loader=yaml.SafeLoader)
-                    import copy
-                    self.config = copy.deepcopy(loaded_config)
-                self.infoText.append(f"Config 로드됨: {type(self.config)}")
-                if self.config and 'dataset_config' in self.config:
-                    self.infoText.append(f"dataset_config 타입: {type(self.config['dataset_config'])}")
-                    if 'root' in self.config['dataset_config']:
-                        self.infoText.append(f"root 타입: {type(self.config['dataset_config']['root'])}")
-                self.load_model()
-                self.checkpointLabel.setText(f"로드됨: {os.path.basename(file_path)}")
-                self.infoText.append(f"체크포인트 로드 완료: {self.config['model']}")
-                self.infoText.append(f"클래스 수: {self.config['num_classes']}")
-            except Exception as e:
-                import traceback
-                error_msg = f"체크포인트 로드 실패: {str(e)}\n{traceback.format_exc()}"
-                QMessageBox.critical(self, "오류", error_msg)
-                self.infoText.append(f"오류 상세: {error_msg}")
+        
+        if not file_path:
+            return  # 사용자가 파일 선택을 취소한 경우
+
+        try:
+            # YAML 설정 로드
+            with open(file_path, 'r', encoding='utf-8') as f:
+                import copy
+                self.config = copy.deepcopy(yaml.safe_load(f))
+            
+            # 정보 출력
+            self.infoText.append(f"[✓] Config 로드됨: {type(self.config)}")
+
+            dataset_config = self.config.get('dataset_config', {})
+            self.infoText.append(f"[✓] dataset_config 타입: {type(dataset_config)}")
+
+            if 'root' in dataset_config:
+                self.infoText.append(f"[✓] dataset_config['root'] 타입: {type(dataset_config['root'])}")
+
+            raw_class_map = self.config.get('class_map', [])
+            self.class_map = {k: v for d in raw_class_map for k, v in d.items()}
+            self.num_classes = self.config.get('num_classes')
+            
+            # 모델 로드
+            self.load_model()
+
+            # 라벨 및 텍스트 업데이트
+            self.checkpointLabel.setText(f"로드됨: {os.path.basename(file_path)}")
+            self.infoText.append(f"[✓] 체크포인트 로드 완료 - 모델: {self.config.get('model', 'Unknown')}")
+            self.infoText.append(f"[✓] 클래스 수: {self.config.get('num_classes', '?')}")
+
+        except Exception as e:
+            import traceback
+            error_msg = f"체크포인트 로드 실패: {str(e)}\n{traceback.format_exc()}"
+            QMessageBox.critical(self, "오류", error_msg)
+            self.infoText.append(f"[✗] 오류 발생\n{error_msg}")
+
 
     def load_model(self):
         try:
@@ -153,9 +180,9 @@ class XAIGUI(QMainWindow):
 
     def open_add_explainer_dialog(self):
         # 이미 로드된 explainer_config 사용
-        dialog = ExplainerAddDialog(self.explainer_config, self.config['model'], self)
+        dialog = ExplainerAddDialog(self.explainer_config, self.config['model'], self.class_map, self)
         if dialog.exec_():
-            explainer_name, params = dialog.get_explainer_info()
+            explainer_name, params, target_class = dialog.get_explainer_info()
             # 파라미터 타입 변환
             for k, v in params.items():
                 try:
@@ -164,16 +191,23 @@ class XAIGUI(QMainWindow):
                     pass
             explainer_class = eval(self.explainer_config['explainer_dict'][explainer_name]['class'])
             # ---------- 중복 이름 처리 ----------
-            base_name = explainer_name
-            idx = 0
-            while True:
-                name = base_name if idx == 0 else f"{base_name}{idx}"
-                if name not in self.explainers:
-                    break
-                idx += 1
-            self.explainers[name] = explainer_class(self.model, params)
+            # 고유 이름 구성: "{explainer} - {target_class} - {version}"
+            class_name = self.class_map.get(target_class, f"class{target_class}")
+            base_key = f"[{explainer_name}] target-{target_class}-{class_name}"
+            existing = [k for k in self.explainers if k.startswith(base_key)]
+            version = len(existing)
+            full_name = f"{base_key}{version}"
+
+            # Explainer 인스턴스 생성 및 등록
+            self.explainers[full_name] = explainer_class(self.model, params)
+
+            # optional: target class 기록
+            if not hasattr(self, 'explainer_targets'):
+                self.explainer_targets = {}
+            self.explainer_targets[full_name] = target_class
+
             self.update_explainer_list()
-            self.infoText.append(f"Explainer 추가: {name}")
+            self.infoText.append(f"Explainer 추가: {full_name}")
 
     def update_explainer_list(self):
         self.explainerListWidget.clear()
@@ -199,11 +233,16 @@ class XAIGUI(QMainWindow):
         if item is None:
             item = self.explainerListWidget.currentItem()
         if item:
+            for name in self.current_explainees.keys():
+                print(name)
             name = item.text()
+            print(f"Removing explainer: {name}")
             if name in self.explainers:
                 del self.explainers[name]
                 self.update_explainer_list()
-                self.infoText.append(f"Explainer 삭제: {name}")
+                if name in self.current_explainees:
+                    del self.current_explainees[name]
+                    self.infoText.append(f"Explainer 및 Explainee 캐시 삭제: {name}")
 
     def load_image(self):
         if self.model is None:
@@ -244,59 +283,50 @@ class XAIGUI(QMainWindow):
     def setup_target_classes(self):
         if self.config is None or self.model is None:
             raise ValueError("설정 또는 모델이 로드되지 않았습니다.")
-        num_classes = self.config['num_classes']
+        num_classes = self.num_classes
         self.targetClassCombo.clear()
-        
-        # class_map 로드
-        class_map = {}
-        if 'class_map' in self.config:
-            for item in self.config['class_map']:
-                for key, value in item.items():
-                    class_map[int(key)] = value
-        
+
         with torch.no_grad():
-            output = self.model(self.current_image_tensor)
-            predicted_class = torch.argmax(output, dim=1).item()
-            confidence = torch.softmax(output, dim=1).max(dim=1).values.item()
-        
+            output = self.model(self.current_image_tensor)  # shape: [1, num_classes]
+            logits = output.squeeze().cpu().numpy()  # shape: [num_classes]
+            predicted_class = int(np.argmax(logits))
+            confidence = float(torch.softmax(output, dim=1).max(dim=1).values.item())
+
         for i in range(num_classes):
-            # class_map에서 클래스 이름 가져오기
-            class_name = class_map.get(i, f"클래스 {i}")
+            class_name = self.class_map.get(i, f"클래스 {i}")
+            logit = logits[i]
             if i == predicted_class:
-                class_name += f" (예측, {confidence:.3f})"
+                class_name += f" (예측, logit={logit:.3f}, conf={confidence:.3f})"
+            else:
+                class_name += f" (logit={logit:.3f})"
             self.targetClassCombo.addItem(class_name, i)
-        
-        self.targetClassCombo.setCurrentIndex(int(predicted_class))
+
+        self.targetClassCombo.setCurrentIndex(predicted_class)
         self.targetClassCombo.setEnabled(True)
         self.current_explainees = {}
-
-    def get_class_name_by_index(self, index):
-        """
-        인덱스를 클래스 이름으로 변환
-        """
-        if self.config is None or 'class_map' not in self.config:
-            return f"클래스 {index}"
-        
-        class_map = {}
-        for item in self.config['class_map']:
-            for key, value in item.items():
-                class_map[int(key)] = value
-        
-        return class_map.get(index, f"클래스 {index}")
-
+        self.predicted_class = predicted_class
+        self.predictedClassLabel.setText(f"현재 예측 클래스: {self.class_map.get(predicted_class, str(predicted_class))}")
     def run_xai(self):
         if self.current_image_tensor is None:
             QMessageBox.warning(self, "경고", "먼저 이미지를 로드해주세요.")
             return
-        target_class = self.targetClassCombo.currentData()
-        
-        # 이미 계산된 explainer는 제외
+
+        # 캐시되지 않은 explainer만 수집
         explainers_to_run = {}
         for name, explainer in self.explainers.items():
             if not hasattr(self, 'current_explainees'):
                 self.current_explainees = {}
             if name not in self.current_explainees:
-                explainers_to_run[name] = explainer
+                # name에서 target_class 파싱
+                try:
+                    target_class = int(name.split('-')[1])
+                except:
+                    QMessageBox.warning(self, "이름 오류", f"Explainer 이름에서 TargetClass 파싱 실패: {name}")
+                    continue
+                explainers_to_run[name] = (explainer, target_class)
+
+        # 기존에 계산된 결과 복사
+        results = dict(self.current_explainees)
 
         # 이미 계산된 heatmap은 바로 결과에 추가
         results = {}
@@ -307,7 +337,7 @@ class XAIGUI(QMainWindow):
         if explainers_to_run:
             self.worker = XAIWorker(
                 self.model, explainers_to_run,
-                self.current_image_tensor, target_class
+                self.current_image_tensor
             )
             self.worker.progress.connect(self.progressBar.setValue)
             self.worker.finished.connect(lambda new_results: self.on_xai_finished_with_cache(new_results, results))
@@ -376,14 +406,12 @@ class XAIGUI(QMainWindow):
         cols = min(3, num_explainers + 1)
         rows = (num_explainers + 1 + cols - 1) // cols
         for i, (name, heatmap) in enumerate(self.heatmap_results.items()):
-            print("name : ", name)
             row = (i + 1) // cols
             col = (i + 1) % cols
             fig = Figure(figsize=(4, 4))
             ax = fig.add_subplot(111)
             name_no_number = re.sub(r'\d+$', '', name)
             cmap = self.explainer_dict.get(name_no_number, {}).get('cmap', 'jet')
-            print("cmap : ", cmap)
             
             if cmap == "gray":
                 # IG는 원본과 heatmap을 겹치지 않음
@@ -395,7 +423,7 @@ class XAIGUI(QMainWindow):
             
             # 현재 선택된 클래스 이름 가져오기
             target_class_index = self.targetClassCombo.currentData()
-            class_name = self.get_class_name_by_index(target_class_index)
+            class_name = get_class_name_by_index(self.config,target_class_index)
             
             ax.set_title(f"{name.upper()} - {class_name}")
             ax.axis('off')
