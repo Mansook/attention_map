@@ -33,6 +33,8 @@ from utils.set_korean import setup_korean_font
 from utils.xaiworker import XAIWorker
 from utils.visualization import save_widget_as_image_auto, save_snapshot_auto
 
+from PyQt5.QtCore import Qt
+
 
 class XAIGUI(QMainWindow):
     def __init__(self):
@@ -88,6 +90,8 @@ class XAIGUI(QMainWindow):
         # --- 스냅샷 이미지 저장 버튼 연결 ---
         self.saveScreenBtn.clicked.connect(self._on_save_snapshot)
         self.saveScreenBtn.setEnabled(False)  # 기본적으로 비활성화
+        #self.openHeatmapDirBtn.clicked.connect(open_heatmap_dir)
+        self.openMultiImageViewerBtn.clicked.connect(self.open_multi_image_viewer)
 
     def load_checkpoint(self):
         # 기본 체크포인트 경로 설정
@@ -446,6 +450,16 @@ class XAIGUI(QMainWindow):
         filename = save_snapshot_auto(self.vizWidget, self.infoText)
         if filename:
             self.snapshot_filenames.append(filename)
+
+    def open_multi_image_viewer(self):
+        from PyQt5.QtWidgets import QFileDialog
+        from utils.visualization import show_images_in_dialog
+        import os
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        snapshot_dir = os.path.join(base_dir, "snapshots")
+        files, _ = QFileDialog.getOpenFileNames(self, "PNG 이미지 선택", snapshot_dir, "PNG Files (*.png)")
+        if files:
+            show_images_in_dialog(files, parent=self)
 
 def main():
     app = QApplication(sys.argv)

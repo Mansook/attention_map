@@ -82,3 +82,34 @@ def save_snapshot_auto(widget, infoText=None):
     save_path = os.path.join(snapshot_dir, filename)
     save_widget_as_image_auto(widget, save_path, infoText)
     return filename
+
+def show_images_in_dialog(image_paths, parent=None, max_cols=2):
+    from PyQt5.QtWidgets import QDialog, QVBoxLayout, QScrollArea, QWidget, QGridLayout, QLabel
+    from PyQt5.QtGui import QPixmap
+    from PyQt5.QtCore import Qt
+
+    dlg = QDialog(parent)
+    dlg.setWindowTitle("스냅샷 이미지 미리보기")
+    dlg.resize(2400, 1600)
+    layout = QVBoxLayout(dlg)
+    scroll = QScrollArea(dlg)
+    scroll.setWidgetResizable(True)
+    container = QWidget()
+    grid = QGridLayout(container)
+
+    # 다이얼로그 크기 기준으로 이미지 크기 계산
+    dlg_width = dlg.width()
+    img_size = int(dlg_width / max_cols) - 40  # 여백 고려
+
+    for i, path in enumerate(image_paths):
+        label = QLabel()
+        pixmap = QPixmap(path)
+        if not pixmap.isNull():
+            label.setPixmap(pixmap.scaled(img_size, img_size, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        else:
+            label.setText(f"이미지 없음\n{path}")
+        row, col = divmod(i, max_cols)
+        grid.addWidget(label, row, col)
+    scroll.setWidget(container)
+    layout.addWidget(scroll)
+    dlg.exec_()
