@@ -31,6 +31,7 @@ from utils.explainer_tooltip import make_explainer_tooltip
 from utils.get_class_name_by_index import get_class_name_by_index
 from utils.set_korean import setup_korean_font
 from utils.xaiworker import XAIWorker
+from utils.visualization import save_widget_as_image_auto, save_snapshot_auto
 
 
 class XAIGUI(QMainWindow):
@@ -62,6 +63,7 @@ class XAIGUI(QMainWindow):
         self.class_map = {}
         self.predicted_class = None
         self.current_explainees = {}
+        self.snapshot_filenames = []  # 스냅샷 파일명 저장
         
         
         self.resize(1800, 1200)  # 또는 원하는 크기로 조정
@@ -83,6 +85,9 @@ class XAIGUI(QMainWindow):
         # Hover 이벤트 활성화
         self.explainerListWidget.setMouseTracking(True)
         self.explainerListWidget.itemEntered.connect(self.show_explainer_info_tooltip)
+        # --- 스냅샷 이미지 저장 버튼 연결 ---
+        self.saveScreenBtn.clicked.connect(self._on_save_snapshot)
+        self.saveScreenBtn.setEnabled(False)  # 기본적으로 비활성화
 
     def load_checkpoint(self):
         # 기본 체크포인트 경로 설정
@@ -280,8 +285,12 @@ class XAIGUI(QMainWindow):
                 self.current_explainees = {}
                 self.setup_target_classes()
                 self.runXaiBtn.setEnabled(True)
+                self.saveScreenBtn.setEnabled(False)  # 이미지 로드 후에는 비활성화
             except Exception as e:
                 QMessageBox.critical(self, "오류", f"이미지 로드 실패: {str(e)}")
+                self.saveScreenBtn.setEnabled(False)  # 실패 시 비활성화
+        else:
+            self.saveScreenBtn.setEnabled(False)  # 파일 선택 취소 시 비활성화
 
     def setup_target_classes(self):
         if self.config is None or self.model is None:
@@ -314,6 +323,7 @@ class XAIGUI(QMainWindow):
             QMessageBox.warning(self, "경고", "먼저 이미지를 로드해주세요.")
             return
 
+        self.saveScreenBtn.setEnabled(False)  # XAI 실행 시 스냅샷 저장 비활성화
         # 캐시되지 않은 explainer만 수집
         explainers_to_run = {}
         for name, explainer in self.explainers.items():
@@ -378,8 +388,10 @@ class XAIGUI(QMainWindow):
                 if widget is not None:
                     widget.setParent(None)
         if not self.heatmap_results:
+            self.saveScreenBtn.setEnabled(False)  # 히트맵 없으면 비활성화
             return
         if self.current_image_tensor is None:
+            self.saveScreenBtn.setEnabled(False)  # 이미지 없으면 비활성화
             return  # 이미지가 없으면 함수 종료
         # 예시: mean, std 값 (dataset config에서 확인)
         if self.config is not None:
@@ -423,11 +435,17 @@ class XAIGUI(QMainWindow):
             target_class_index = self.targetClassCombo.currentData()
             class_name = get_class_name_by_index(self.config,target_class_index)
             
-            ax.set_title(f"{name.upper()} - ")
+            ax.set_title(f"{name.upper()}")
             ax.axis('off')
             canvas = FigureCanvas(fig)
             self.vizLayout.addWidget(canvas, row, col)
         self.infoText.append(f"히트맵 생성 완료: {len(self.heatmap_results)}개")
+        self.saveScreenBtn.setEnabled(True)  # 히트맵 생성 후에만 스냅샷 저장 활성화
+
+    def _on_save_snapshot(self):
+        filename = save_snapshot_auto(self.vizWidget, self.infoText)
+        if filename:
+            self.snapshot_filenames.append(filename)
 
 def main():
     app = QApplication(sys.argv)

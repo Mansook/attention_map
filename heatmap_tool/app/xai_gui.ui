@@ -103,6 +103,13 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QPushButton" name="saveScreenBtn">
+            <property name="text">
+             <string>스냅샷 저장</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>

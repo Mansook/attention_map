@@ -13,6 +13,7 @@ class ExplainerAddDialog(QDialog):
     def __init__(self, explainer_config, model_name, class_map,  current_predict=None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Explainer 추가")
+        self.setFixedSize(500, 500)  # 다이얼로그 크기 고정
         self.explainer_config = explainer_config
         self.model_name = model_name
         self.class_map = class_map  # ✅ class_map 저장
