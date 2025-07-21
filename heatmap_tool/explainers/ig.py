@@ -3,7 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from explainers.utils.normalize_heatmap import process_heatmap_by_type
-
+from explainers.utils.slic import superpixel_mean_map
+import numpy as np
 class IG(nn.Module):
     def __init__(self,model,config_dict):
         super(IG,self).__init__()
@@ -15,6 +16,9 @@ class IG(nn.Module):
         self.baseline = None
         self.feature_maps = None
         self.gradients = None
+        self.slic = config_dict.get('slic',False)
+        self.slic_size = config_dict.get('slic_size',10)
+        self.slic_ruler = config_dict.get('slic_ruler',10)
         
     def make_baseline(self,input_tensor):
         return torch.zeros_like(input_tensor)
@@ -60,7 +64,17 @@ class IG(nn.Module):
         # utils의 통합 처리 함수 사용
         ig_map = process_heatmap_by_type(ig_map.squeeze(), self.type)
         
-        return ig_map
+        if self.slic is True:
+            print("IG Slic Lets go")
+            sp_map, labels, sp_means = superpixel_mean_map(ig_map,region_size = self.slic_size,ruler=self.slic_ruler)
+            # 시각화용 RGB 컬러맵 변환 (예: OpenCV)
+            import cv2
+            sp_map_norm = (sp_map - sp_map.min()) / (sp_map.max() - sp_map.min() + 1e-8)
+            sp_map_uint8 = (sp_map_norm * 255).astype(np.uint8)
+            sp_map_color = cv2.applyColorMap(sp_map_uint8, cv2.COLORMAP_JET)
+            return sp_map_color  # (H, W, 3) RGB 이미지 반환
+
+        return ig_map  # 1채널 맵 반환
 
     def set_config_dict(self, config_dict):
         """설정 업데이트"""

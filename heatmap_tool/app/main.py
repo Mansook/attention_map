@@ -191,6 +191,7 @@ class XAIGUI(QMainWindow):
         dialog = ExplainerAddDialog(self.explainer_config, self.config['model'], self.class_map, current_predict=self.predicted_class, parent=self)
         if dialog.exec_():
             explainer_name, params, target_class = dialog.get_explainer_info()
+            print(params)
             vis_type = ""
             # 파라미터 타입 변환
             for k, v in params.items():
@@ -456,7 +457,7 @@ class XAIGUI(QMainWindow):
         from utils.visualization import show_images_in_dialog
         import os
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        snapshot_dir = os.path.join(base_dir, "snapshots")
+        snapshot_dir = "C:/Users/orgin/XAI-study/heatmap_tool/app/snapshots"
         files, _ = QFileDialog.getOpenFileNames(self, "PNG 이미지 선택", snapshot_dir, "PNG Files (*.png)")
         if files:
             show_images_in_dialog(files, parent=self)
