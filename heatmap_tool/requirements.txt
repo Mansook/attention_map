@@ -3,6 +3,7 @@ torchvision>=0.10.0
 numpy>=1.21.0
 matplotlib>=3.3.0
 opencv-python>=4.5.0
+opencv-contrib-python>=4.5.0  # SLIC/ximgproc 지원
 Pillow>=8.0.0
 PyYAML>=6.0 
 kagglehub

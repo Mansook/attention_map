@@ -141,9 +141,9 @@ class ExplainerAddDialog(QDialog):
         params = {k: v.text() for k, v in self.param_inputs.items()}
         # type 파라미터 추가
         params['type'] = self.type_combo.currentText()
+        print("Current type ", params['type'])
         # slic 파라미터 추가
         if self.slic_checkbox is not None:
-     
             params['slic'] = self.slic_checkbox.isChecked()
             if self.slic_checkbox.isChecked():
                 if self.slic_size_input is not None:

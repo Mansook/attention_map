@@ -42,11 +42,11 @@ def process_heatmap_by_type(heatmap_tensor, type_name):
             heatmap = np.clip((heatmap - vmin) / (vmax - vmin + 1e-8), 0, 1)
     elif type_name == 'positive':
         # 양수만 모드: 양수만 정규화
-        heatmap = np.maximum(heatmap, 0)
+        heatmap = np.maximum(heatmap, 0) #양수만 남김. 음수는 0으로 만듬
         if heatmap.max() > 0:
-            vmax = np.percentile(heatmap, 99)
-            vmin = np.percentile(heatmap, 1)
-            heatmap = np.clip((heatmap - vmin) / (vmax - vmin + 1e-8), 0, 1)
+            vmax = np.percentile(heatmap, 99) #최댓값 
+            vmin = np.percentile(heatmap, 1)  #최솟값 
+            heatmap = np.clip((heatmap - vmin) / (vmax - vmin + 1e-8), 0, 1) #정규화 하여, 0보다 작으면 0, 1보다 크면 1로 만듬
     elif type_name == 'negative':
         # 음수만 모드: 음수만 정규화
         heatmap = np.minimum(heatmap, 0)

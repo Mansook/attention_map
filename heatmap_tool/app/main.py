@@ -194,18 +194,24 @@ class XAIGUI(QMainWindow):
             print(params)
             vis_type = ""
             # 파라미터 타입 변환
-            for k, v in params.items():
+            for k, v in list(params.items()):
+                print("K:", k, "V:", v)
                 try:
-                    params[k] = eval(v)
-                    if k=="type":
+                    if k == "type":
                         vis_type = v
+                    val = eval(v)
+                    params[k] = val
                 except:
-                    pass
+                    params[k] = v
+                    if k == "type":
+                        vis_type = v
             explainer_class = eval(self.explainer_config['explainer_dict'][explainer_name]['class'])
             # ---------- 중복 이름 처리 ----------
             # 고유 이름 구성: "{explainer} - {target_class} - {visualization type} : {version}"
             class_name = self.class_map.get(target_class, f"class{target_class}")
+            print("Vis_TYpe",vis_type)
             base_key = f"[{explainer_name}] target-{target_class}-{vis_type}:{class_name}"
+            
             existing = [k for k in self.explainers if k.startswith(base_key)]
             version = len(existing)
             full_name = f"{base_key}{version}"
@@ -434,14 +440,18 @@ class XAIGUI(QMainWindow):
             cmap = self.explainer_dict.get(name_no_number, {}).get('cmap', 'jet')
             
             ax.imshow(img_array, alpha=0.5)
-            ax.imshow(heatmap, cmap=cmap, alpha=0.7)
+            im = ax.imshow(heatmap, cmap=cmap, alpha=0.7)
             
             # 현재 선택된 클래스 이름 가져오기
             target_class_index = self.targetClassCombo.currentData()
-            class_name = get_class_name_by_index(self.config,target_class_index)
+            class_name = get_class_name_by_index(self.config, target_class_index)
             
             ax.set_title(f"{name.upper()}")
             ax.axis('off')
+            
+            # Colorbar 추가 (오른쪽에 세로로)
+            fig.colorbar(im, ax=ax, orientation='vertical', fraction=0.046, pad=0.04)
+            
             canvas = FigureCanvas(fig)
             self.vizLayout.addWidget(canvas, row, col)
         self.infoText.append(f"히트맵 생성 완료: {len(self.heatmap_results)}개")
