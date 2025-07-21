@@ -68,7 +68,7 @@ class XAIGUI(QMainWindow):
         self.snapshot_filenames = []  # 스냅샷 파일명 저장
         
         
-        self.resize(1800, 1200)  # 또는 원하는 크기로 조정
+        self.resize(2600, 1200)  # 또는 원하는 크기로 조정
 
     def setup_ui(self):
         self.loadCheckpointBtn.clicked.connect(self.load_checkpoint)
@@ -433,8 +433,8 @@ class XAIGUI(QMainWindow):
             name_no_number = re.sub(r'\d+$', '', name)
             cmap = self.explainer_dict.get(name_no_number, {}).get('cmap', 'jet')
             
-            ax.imshow(img_array, alpha=0.4)
-            ax.imshow(heatmap, cmap=cmap, alpha=0.8)
+            ax.imshow(img_array, alpha=0.5)
+            ax.imshow(heatmap, cmap=cmap, alpha=0.7)
             
             # 현재 선택된 클래스 이름 가져오기
             target_class_index = self.targetClassCombo.currentData()
