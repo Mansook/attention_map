@@ -7,32 +7,55 @@ def process_heatmap_by_type(heatmap_tensor, type_name):
     히트맵을 type에 따라 처리하고 정규화
     
     Args:
-        heatmap_tensor: 처리할 히트맵 텐서
+        heatmap_tensor: 처리할 히트맵 텐서 또는 numpy array
         type_name: 처리 타입 ("absolute", "positive", "negative", "both")
     
     Returns:
         normalized_heatmap: 처리되고 정규화된 히트맵 (numpy array)
     """
     #print("Current Typename: ", type_name )
-    # type에 따라 텐서 처리
-    if type_name == 'absolute':
-        # 절댓값 모드
-        heatmap_tensor = torch.abs(heatmap_tensor)
-    elif type_name == 'positive':
-        # 양수만 모드
-        heatmap_tensor = F.relu(heatmap_tensor)
-    elif type_name == 'negative':
-        # 음수만 모드
-        heatmap_tensor = -F.relu(-heatmap_tensor)
-    elif type_name == 'both':
-        # 양수/음수 모두 모드 (기본값)
-        pass  # 원본 값 그대로 사용
-    else:
-        # 기본값: 양수/음수 모두
-        pass
     
-    # numpy로 변환
-    heatmap = heatmap_tensor.cpu().numpy()
+    # 입력 타입 확인 및 처리
+    if isinstance(heatmap_tensor, torch.Tensor):
+        # PyTorch tensor인 경우
+        if type_name == 'absolute':
+            # 절댓값 모드
+            heatmap_tensor = torch.abs(heatmap_tensor)
+        elif type_name == 'positive':
+            # 양수만 모드
+            heatmap_tensor = F.relu(heatmap_tensor)
+        elif type_name == 'negative':
+            # 음수만 모드
+            heatmap_tensor = -F.relu(-heatmap_tensor)
+        elif type_name == 'both':
+            # 양수/음수 모두 모드 (기본값)
+            pass  # 원본 값 그대로 사용
+        else:
+            # 기본값: 양수/음수 모두
+            pass
+        
+        # numpy로 변환
+        heatmap = heatmap_tensor.cpu().numpy()
+    else:
+        # numpy array인 경우
+        heatmap = np.array(heatmap_tensor)
+        
+        # type에 따라 numpy 처리
+        if type_name == 'absolute':
+            # 절댓값 모드
+            heatmap = np.abs(heatmap)
+        elif type_name == 'positive':
+            # 양수만 모드
+            heatmap = np.maximum(heatmap, 0)
+        elif type_name == 'negative':
+            # 음수만 모드
+            heatmap = np.minimum(heatmap, 0)
+        elif type_name == 'both':
+            # 양수/음수 모두 모드 (기본값)
+            pass  # 원본 값 그대로 사용
+        else:
+            # 기본값: 양수/음수 모두
+            pass
     
     # 정규화 처리
     if type_name == 'absolute':

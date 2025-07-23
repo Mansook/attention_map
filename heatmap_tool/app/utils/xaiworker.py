@@ -11,7 +11,13 @@ class XAIWorker(QThread):
         self.model = model
         self.explainers = explainers
         self.image = image
+        self.progress_callback = None  # 진행률 콜백 함수
         print("image size : ", self.image.shape)
+    
+    def set_progress_callback(self, callback):
+        """진행률 콜백 함수 설정"""
+        self.progress_callback = callback
+    
     def run(self):
         """
         QThread의 run 메서드 오버라이드.
@@ -25,15 +31,24 @@ class XAIWorker(QThread):
         try:
             results = {}
             total_explainers = len(self.explainers)
+            
             for i, (name, (explainer, target_class)) in enumerate(self.explainers.items()):
-                # 진행률을 메인 스레드로 emit (GUI 업데이트용)
-                self.progress.emit(int((i / total_explainers) * 100))
+                # 전체 진행률 업데이트
+                overall_progress = int((i / total_explainers) * 100)
+                self.progress.emit(overall_progress)
+                
+                # explainer에 진행률 콜백 설정 (있는 경우)
+                if hasattr(explainer, 'progress_callback') and self.progress_callback:
+                    explainer.progress_callback = self.progress_callback
+                
                 # 각 explainer의 generate 메서드 실행 (여기서 연산 발생, 순차적임)
                 heatmap = explainer.generate(self.image, class_idx=target_class)
+                
                 # 결과가 torch.Tensor면 numpy로 변환
                 if isinstance(heatmap, torch.Tensor):
                     heatmap = heatmap.squeeze().cpu().numpy()
                 results[name] = heatmap
+            
             # 100% 완료 신호
             self.progress.emit(100)
             # 결과 딕셔너리를 finished 시그널로 emit

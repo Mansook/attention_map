@@ -56,6 +56,20 @@ explainer_dict:
       ResNet34:
         num_sample: 10
         var: 0.125
+  shap:
+    class: SHAP
+    type : "absolute"
+    description: "kernel SHAP"
+    cmap: "jet"
+    slic:
+      forced : True
+      size : 10
+      ruler : 5
+    model:
+      ResNet18:
+        sampling_size: 1000
+      ResNet34:
+        sampling_size: 1000
   # 필요시 추가 explainer
   # my_custom_xai:
   #   class: MyCustomXAI

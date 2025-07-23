@@ -25,7 +25,7 @@ from utils.explainer_add_dialog import ExplainerAddDialog  # 다이얼로그는 
 # 상위 디렉토리 모듈들 import
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dataset.datasetLoader import get_dataloaders
-from explainers import CAM, IG, RISE, GradCAM, SmoothGrad
+from explainers import CAM, IG, RISE, GradCAM, SmoothGrad, SHAP
 from models import CustomResNet34, ResNetClassifier
 from utils.explainer_tooltip import make_explainer_tooltip
 from utils.get_class_name_by_index import get_class_name_by_index
@@ -37,6 +37,10 @@ from PyQt5.QtCore import Qt
 
 
 class XAIGUI(QMainWindow):
+    # 진행률 업데이트 시그널 추가
+    progress_update = pyqtSignal(int)
+    progress_text_update = pyqtSignal(str)
+    
     def __init__(self):
         super().__init__()
         setup_korean_font()
@@ -67,6 +71,9 @@ class XAIGUI(QMainWindow):
         self.current_explainees = {}
         self.snapshot_filenames = []  # 스냅샷 파일명 저장
         
+        # 진행률 시그널 연결
+        self.progress_update.connect(self.progressBar.setValue)
+        self.progress_text_update.connect(self.progressInfo.setText)
         
         self.resize(2600, 1200)  # 또는 원하는 크기로 조정
 
@@ -335,6 +342,17 @@ class XAIGUI(QMainWindow):
             return
 
         self.saveScreenBtn.setEnabled(False)  # XAI 실행 시 스냅샷 저장 비활성화
+        
+        # 진행률 표시 초기화
+        self.progressBar.setValue(0)
+        self.progressBar.setVisible(True)
+        self.progressInfo.setVisible(True)
+        # 공통 진행률 콜백 함수 정의
+        def progress_callback(percent, name):
+            # 스레드 안전한 UI 업데이트
+            self.progress_update.emit(percent)
+            self.progress_text_update.emit(f"진행중인 작업: {name}")
+        
         # 캐시되지 않은 explainer만 수집
         explainers_to_run = {}
         for name, explainer in self.explainers.items():
@@ -347,6 +365,7 @@ class XAIGUI(QMainWindow):
                 except:
                     QMessageBox.warning(self, "이름 오류", f"Explainer 이름에서 TargetClass 파싱 실패: {name}")
                     continue
+                
                 explainers_to_run[name] = (explainer, target_class)
 
         # 기존에 계산된 결과 복사
@@ -363,6 +382,8 @@ class XAIGUI(QMainWindow):
                 self.model, explainers_to_run,
                 self.current_image_tensor
             )
+            # 공통 진행률 콜백 설정
+            self.worker.set_progress_callback(progress_callback)
             self.worker.progress.connect(self.progressBar.setValue)
             self.worker.finished.connect(lambda new_results: self.on_xai_finished_with_cache(new_results, results))
             self.worker.error.connect(self.on_xai_error)
@@ -383,12 +404,17 @@ class XAIGUI(QMainWindow):
         self.heatmap_results = all_results
         self.runXaiBtn.setEnabled(True)
         self.progressBar.setValue(0)
+        self.progressBar.setVisible(False)  # 진행률 바 숨기기
+        self.progressInfo.setVisible(False)
+        self.progressInfo.setText("진행중인 작업 없음")
         self.visualize_results()
 
     def on_xai_error(self, error_msg):
         QMessageBox.critical(self, "오류", f"히트맵 생성 실패: {error_msg}")
         self.runXaiBtn.setEnabled(True)
         self.progressBar.setValue(0)
+        self.progressBar.setVisible(False) 
+        self.progressInfo.setText("진행중인 작업 없음")# 진행률 바 숨기기
 
     def visualize_results(self):
         # 기존 위젯들 제거

@@ -94,6 +94,13 @@
          </property>
          <layout class="QVBoxLayout" name="xaiLayout">
           <item>
+           <widget class="QLabel" name="progressInfo">
+            <property name="text">
+             <string>진행중인 작업 없음</string>
+            </property>
+           </widget>
+          </item>   
+          <item>
            <widget class="QProgressBar" name="progressBar"/>
           </item>
           <item>

@@ -22,6 +22,7 @@ class IG(nn.Module):
         self.slic = config_dict.get('slic',False)
         self.slic_size = config_dict.get('slic_size',10)
         self.slic_ruler = config_dict.get('slic_ruler',10)
+        self.progress_callback = None  # 진행률 콜백 (XAIWorker에서 설정)
         
     def make_baseline(self, input_tensor):
         # input_tensor: [1, C, H, W] 또는 [C, H, W]
@@ -69,6 +70,11 @@ class IG(nn.Module):
         gradients_sum = torch.zeros_like(input_tensor)
         # print(f"[IG] gradients_sum 초기화 shape: {gradients_sum.shape}")
         for i in range(self.steps):
+            # 진행률 계산 및 콜백 호출
+            progress_percent = int((i / self.steps) * 100)
+            if self.progress_callback:
+                self.progress_callback(progress_percent, "IG")
+            
             # print(f"[IG] step {i+1}/{self.steps}")
             interpolated_input = interpolated_inputs[i].unsqueeze(0)  # [1, 3, 96, 96]
             interpolated_input = interpolated_input.clone().requires_grad_(True)
@@ -88,6 +94,10 @@ class IG(nn.Module):
             else:
                 # print("[IG] gradients가 None입니다!")
                 raise RuntimeError("Gradients are not available")
+        
+        # 100% 완료 신호
+        if self.progress_callback:
+            self.progress_callback(100, "IG")
 
         avg_gradients = gradients_sum / self.steps
         #print(f"[IG] avg_gradients shape: {avg_gradients.shape}, min: {avg_gradients.min()}, max: {avg_gradients.max()}")
@@ -99,30 +109,24 @@ class IG(nn.Module):
         ig_map = process_heatmap_by_type(ig_map.squeeze(), self.type)
         #print(f"[IG] process_heatmap_by_type 적용 후 ig_map shape: {ig_map.shape}, min: {ig_map.min()}, max: {ig_map.max()}")
         if self.slic is True:
-            print("[IG] Slic Lets go")
-            # input_tensor를 squeeze해서 2D 배열로 변환
-            input_2d = input_tensor.squeeze()  # [C, H, W] 또는 [H, W]로 변환
-            if input_2d.dim() == 3:  # [C, H, W]인 경우
-                input_2d = input_2d.mean(dim=0)  # 채널 평균을 취해서 [H, W]로 변환
-            print(f"[IG] input_tensor 원본 shape: {input_tensor.shape}")
-            print(f"[IG] input_2d 변환 후 shape: {input_2d.shape}")
-            
+            #print("[IG] Slic Lets go")
+
             # SLIC로 슈퍼픽셀 라벨과 경계선 추출
-            labels, boundary = superpixel_mean_map(input_2d, region_size=self.slic_size, ruler=self.slic_ruler)
-            print(f"[IG] labels shape: {labels.shape}, unique labels: {np.unique(labels)}")
-            print(f"[IG] boundary shape: {boundary.shape}")
+            labels, boundary = superpixel_mean_map(input_tensor, region_size=self.slic_size, ruler=self.slic_ruler)
+            #print(f"[IG] labels shape: {labels.shape}, unique labels: {np.unique(labels)}")
+            ##print(f"[IG] boundary shape: {boundary.shape}")
             
             # ig_map을 numpy로 변환 (tensor인 경우)
             if hasattr(ig_map, 'cpu'):
                 ig_map_np = ig_map.cpu().numpy()
             else:
                 ig_map_np = ig_map
-            print(f"[IG] ig_map_np shape: {ig_map_np.shape}, min: {ig_map_np.min()}, max: {ig_map_np.max()}")
+            #print(f"[IG] ig_map_np shape: {ig_map_np.shape}, min: {ig_map_np.min()}, max: {ig_map_np.max()}")
             
             # 각 슈퍼픽셀별로 IG 기여도 평균 계산
             unique_labels = np.unique(labels)  # 모든 고유한 슈퍼픽셀 라벨들 (예: [0, 1, 2, 3, ...])
             num_superpixels = len(unique_labels)
-            print(f"[IG] 슈퍼픽셀 개수: {num_superpixels}")
+            #print(f"[IG] 슈퍼픽셀 개수: {num_superpixels}")
             
             # 슈퍼픽셀별 평균 기여도 계산
             superpixel_contributions = np.zeros(num_superpixels)  # 각 슈퍼픽셀의 평균 기여도를 저장할 배열
@@ -134,7 +138,7 @@ class IG(nn.Module):
                     # ig_map_np[mask]: mask가 True인 픽셀들의 IG 기여도만 추출
                     # .mean(): 추출된 기여도들의 평균을 계산
                     superpixel_contributions[i] = ig_map_np[mask].mean()
-                    print(f"[IG] 슈퍼픽셀 {label}: 평균 기여도 = {superpixel_contributions[i]:.4f}, 픽셀 수 = {np.sum(mask)}")
+                    #print(f"[IG] 슈퍼픽셀 {label}: 평균 기여도 = {superpixel_contributions[i]:.4f}, 픽셀 수 = {np.sum(mask)}")
             
             # 슈퍼픽셀별 기여도로 시각화 맵 생성
             slic_visualization = np.zeros_like(ig_map_np)  # 원본 IG 맵과 같은 크기의 빈 배열
@@ -146,7 +150,7 @@ class IG(nn.Module):
                 # 결과적으로 같은 슈퍼픽셀 내의 모든 픽셀이 동일한 평균 기여도 값을 가지게 됨
                 slic_visualization[mask] = superpixel_contributions[i]
             
-            print(f"[IG] slic_visualization shape: {slic_visualization.shape}, min: {slic_visualization.min()}, max: {slic_visualization.max()}")
+            #print(f"[IG] slic_visualization shape: {slic_visualization.shape}, min: {slic_visualization.min()}, max: {slic_visualization.max()}")
             
             return slic_visualization  # 슈퍼픽셀별 평균 기여도 맵 반환
      

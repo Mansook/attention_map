@@ -113,10 +113,23 @@ class ExplainerAddDialog(QDialog):
 
         # SLIC 옵션이 explainer config에 있으면 체크박스 표시
         slic_option = self.explainer_config['explainer_dict'][explainer_name].get('slic', None)
-         # 체크박스 토글에 따라 입력란 표시/숨김
+        # 체크박스 토글에 따라 입력란 표시/숨김
         if self.slic_checkbox is not None:
             if slic_option is not None:
                 self.slic_checkbox.setVisible(True)
+                
+                # forced 옵션 확인
+                forced_option = slic_option.get('forced', False) if isinstance(slic_option, dict) else False
+                
+                if forced_option:
+                    # forced가 True면 체크박스 강제 체크 및 비활성화
+                    self.slic_checkbox.setChecked(True)
+                    self.slic_checkbox.setEnabled(False)
+                    print(f"[Dialog] SLIC forced: {forced_option} - 체크박스 강제 체크 및 비활성화")
+                else:
+                    # forced가 False면 정상 동작
+                    self.slic_checkbox.setEnabled(True)
+                
                 # SLIC dict에서 size/ruler 값 추출
                 size_val = slic_option.get('size', '') if isinstance(slic_option, dict) else ''
                 ruler_val = slic_option.get('ruler', '') if isinstance(slic_option, dict) else ''
