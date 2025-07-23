@@ -35,7 +35,7 @@ explainer_dict:
     description: "Integrated Gradients"
     cmap: "jet"
     slic:
-      size : 5
+      size : 10
       ruler : 5
     model:
       ResNet18:
@@ -45,9 +45,9 @@ explainer_dict:
     class: SmoothGrad
     type : "positive"
     description: "Smooth-Grad"
-    camp: "jet"
+    camp: "gray"
     slic:
-      size : 5
+      size : 10
       ruler : 5
     model:
       ResNet18:

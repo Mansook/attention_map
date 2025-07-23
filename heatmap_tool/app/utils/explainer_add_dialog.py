@@ -50,7 +50,7 @@ class ExplainerAddDialog(QDialog):
         # Type 선택 추가
         layout.addWidget(QLabel("Type 선택"))
         self.type_combo = QComboBox()
-        self.type_combo.addItems(["both", "abs", "positive", "negative"])
+        self.type_combo.addItems(["absolute", "positive", "negative","both"])
         layout.addWidget(self.type_combo)
 
         # SLIC 토글 체크박스 (초기화는 update_form에서)

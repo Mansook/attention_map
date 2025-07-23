@@ -436,11 +436,13 @@ class XAIGUI(QMainWindow):
             col = (i + 1) % cols
             fig = Figure(figsize=(4, 4))
             ax = fig.add_subplot(111)
-            name_no_number = re.sub(r'\d+$', '', name)
+            match = re.match(r'\[(.*?)\]', name)
+            name_no_number = match.group(1) if match else ""
+            print("name_no_number", name_no_number)
             cmap = self.explainer_dict.get(name_no_number, {}).get('cmap', 'jet')
             
             ax.imshow(img_array, alpha=0.5)
-            im = ax.imshow(heatmap, cmap=cmap, alpha=0.7)
+            im = ax.imshow(heatmap, cmap=cmap, alpha=0.5)
             
             # 현재 선택된 클래스 이름 가져오기
             target_class_index = self.targetClassCombo.currentData()
