@@ -4,3 +4,4 @@ from .ig import IG
 from .rise import RISE
 from .smooth_grad import SmoothGrad
 from .shap import SHAP
+from .lmap import LMAP

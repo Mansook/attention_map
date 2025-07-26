@@ -2,7 +2,7 @@ import torch.nn as nn
 import torchvision.models as models
 
 class ResNetClassifier(nn.Module):
-    def __init__(self, num_classes=10, weights=True, dataset_config=None):
+    def __init__(self, num_classes=10, weights=None, dataset_config=None):
         """
         ResNet 분류기 초기화
         

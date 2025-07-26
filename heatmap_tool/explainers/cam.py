@@ -33,27 +33,44 @@ class CAM(nn.Module):
         def forward_hook(module, input, output):
             self.feature_maps = output
         
-        # backbone이 있으면 backbone에서, 없으면 model 전체에서 찾기
+        # 모델 구조에 따라 타겟 레이어 찾기
         if hasattr(self.model, "backbone"):
-            modules = dict([*self.model.backbone.named_modules()])
+            target_layer = dict([*self.model.backbone.named_modules()])[self.target_layer_name]
         else:
-            modules = dict([*self.model.named_modules()])
-
-        if self.target_layer_name not in modules:
-            raise ValueError(f"타겟 레이어 '{self.target_layer_name}'을(를) 찾을 수 없습니다.")
-        target_layer = modules[self.target_layer_name]
+            target_layer = dict([*self.model.named_modules()])[self.target_layer_name]
+            
         target_layer.register_forward_hook(forward_hook)
     
-    def forward(self, x):
-        """모델의 forward pass (훅 실행을 위해 필요)"""
-        return self.model(x)
-        
+    def _get_fc_weights(self, class_idx):
+        """FC 레이어의 가중치를 안전하게 가져오기"""
+        try:
+            # ResNetClassifier의 경우
+            if hasattr(self.model, 'backbone') and hasattr(self.model.backbone, 'fc'):
+                fc_weights = self.model.backbone.fc.weight
+            # CustomResNet34의 경우  
+            elif hasattr(self.model, 'classifier'):
+                fc_weights = self.model.classifier[-1].weight
+            else:
+                # 마지막 FC 레이어 찾기
+                for name, module in self.model.named_modules():
+                    if isinstance(module, nn.Linear):
+                        fc_weights = module.weight
+                        break
+                else:
+                    raise RuntimeError("FC 레이어를 찾을 수 없습니다.")
+            
+            return fc_weights[class_idx]
+            
+        except Exception as e:
+            print(f"FC 레이어 가중치 가져오기 실패: {e}")
+            raise
+    
     def generate(self, input_tensor, class_idx=None):
         """
         CAM 맵 생성
 
         Args:
-            input_tensor: 입력 텐서 (예: 이미지) [3, H, W] 또는 [1, 3, H, W] (무조건 단일 이미지만 지원)
+            input_tensor: 입력 텐서 [1, 3, H, W]
             class_idx: 특정 클래스의 CAM 맵 생성 (기본값: None, 예측된 클래스 사용)
 
         Returns:
@@ -69,17 +86,8 @@ class CAM(nn.Module):
                 class_idx = torch.argmax(output, dim=1).item()
 
             # FC 레이어의 가중치 가져오기
-            if hasattr(self.model, "backbone") and hasattr(self.model.backbone, "fc"):
-                # torchvision resnet 계열
-                fc_layer = get_layer_by_name(self.model, "fc") or self.model.backbone.fc
-                fc_weights = fc_layer.weight
-            else:
-                # CustomResNet34
-                fc_layer = get_layer_by_name(self.model, "classifier.3")
-                if fc_layer is None:
-                    raise RuntimeError("FC 레이어(classifier.4)를 찾을 수 없습니다.")
-                fc_weights = fc_layer.weight
-            target_weight = fc_weights[class_idx]  # 해당 클래스의 가중치
+            target_weight = self._get_fc_weights(class_idx)
+            
             # feature_maps가 None인지 확인
             if self.feature_maps is None:
                 raise RuntimeError("feature_maps가 None입니다. 훅이 제대로 등록되었는지 확인하세요.")
@@ -87,22 +95,29 @@ class CAM(nn.Module):
             # feature map에서 배치 차원 제거
             feature_map = self.feature_maps.squeeze(0)  # [C, H, W]
             
-            # CAM 계산: feature map과 가중치의 가중합
+            print(f"Feature map shape: {feature_map.shape}")
+            print(f"Target weight shape: {target_weight.shape}")
+            
+            # CAM 계산
             cam = torch.zeros(feature_map.shape[1], feature_map.shape[2], device=input_tensor.device)
             for i, weight in enumerate(target_weight):
                 cam += weight * feature_map[i]
-            
-            # 원본 이미지 크기로 리사이즈
-            cam = F.interpolate(
-                cam.unsqueeze(0).unsqueeze(0),
-                size=(input_tensor.shape[2], input_tensor.shape[3]),
-                mode='bilinear',
-                align_corners=False
-            )
-            
-            # utils의 통합 처리 함수 사용
-            cam = process_heatmap_by_type(cam.squeeze(), self.type)
-            
+
+            print(f"CAM shape: {cam.shape}")
+
+            # numpy로 변환 후 바로 리사이즈
+            cam_np = cam.detach().cpu().numpy()
+            from scipy.ndimage import zoom
+
+            # 원본 이미지 크기로 업샘플링
+            target_size = (input_tensor.shape[2], input_tensor.shape[3])  # (96, 96)
+            cam_resized = zoom(cam_np, (target_size[0]/cam_np.shape[0], target_size[1]/cam_np.shape[1]))
+
+            print(f"Resized CAM shape: {cam_resized.shape}")
+
+            # utils 함수로 처리
+            cam = process_heatmap_by_type(cam_resized, self.type)
+
             return cam
             
     def set_config_dict(self, config_dict):

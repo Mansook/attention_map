@@ -1,6 +1,8 @@
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
+import numpy as np
+from scipy.ndimage import zoom
 from explainers.utils.normalize_heatmap import process_heatmap_by_type
 
 class GradCAM(nn.Module):
@@ -58,25 +60,21 @@ class GradCAM(nn.Module):
         print(f"gradients.shape: {gradients.shape}")
             
         weights = torch.mean(gradients, dim=(2, 3), keepdim=True)
-        cam = torch.sum(weights * feature_maps, dim=1)  # [1, 6, 6]
+        cam = torch.sum(weights * feature_maps, dim=1)  # [1, H, W]
         
-        # type에 따라 처리 (ReLU 제거하고 utils 함수 사용)
-        if self.type == 'positive':
-            cam = F.relu(cam)
-        elif self.type == 'negative':
-            cam = -F.relu(-cam)
-        elif self.type == 'abs':
-            cam = torch.abs(cam)
-        # 'both'는 원본 값 그대로 사용
+        print(f"GradCAM shape: {cam.shape}")
         
-        cam = cam.unsqueeze(1)  # [1, 1, 6, 6] - 채널 차원 추가
+        # numpy로 변환 후 바로 리사이즈
+        cam_np = cam.detach().cpu().numpy().squeeze()
         
         # 원본 이미지 크기로 업샘플링
-        input_size = input_tensor.shape[2:]  # (H, W)
-        cam = F.interpolate(cam, size=input_size, mode='bilinear', align_corners=False)
+        target_size = (input_tensor.shape[2], input_tensor.shape[3])  # (96, 96)
+        cam_resized = zoom(cam_np, (target_size[0]/cam_np.shape[0], target_size[1]/cam_np.shape[1]))
         
-        # utils의 통합 처리 함수 사용
-        cam = process_heatmap_by_type(cam.squeeze(), self.type)
+        print(f"Resized GradCAM shape: {cam_resized.shape}")
+        
+        # utils 함수로 처리
+        cam = process_heatmap_by_type(cam_resized, self.type)
             
         return cam
         

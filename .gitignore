@@ -5,10 +5,11 @@ heatmap_tool/train/data/
 heatmap_tool/cam_results/
 # Model checkpoints
 heatmap_tool/checkpoints/
-
+heatmap_tool/shap_samples/
 # Results
 heatmap_tool/xai_results/
-
+heatmap_tool/app/snapshots/
+heatmap_tool/cache/
 # Environment
 xai_env/
 

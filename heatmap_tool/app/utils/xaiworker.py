@@ -42,6 +42,8 @@ class XAIWorker(QThread):
                     explainer.progress_callback = self.progress_callback
                 
                 # 각 explainer의 generate 메서드 실행 (여기서 연산 발생, 순차적임)
+                print(f"Explainer: {name}, Target Class: {target_class}")
+                print(f"Image shape: {self.image.shape}")
                 heatmap = explainer.generate(self.image, class_idx=target_class)
                 
                 # 결과가 torch.Tensor면 numpy로 변환
