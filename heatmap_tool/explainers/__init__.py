@@ -5,3 +5,4 @@ from .rise import RISE
 from .smooth_grad import SmoothGrad
 from .shap import SHAP
 from .lmap import LMAP
+from .permutation_shap import PERMUTATION_SHAP

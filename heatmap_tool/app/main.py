@@ -27,7 +27,7 @@ from utils.get_class_name_by_index import get_class_name_by_index
 from utils.set_korean import setup_korean_font
 from utils.xaiworker import XAIWorker
 from utils.visualization import save_widget_as_image_auto, save_snapshot_auto
-
+from dialog.logitPlot import show_logit_plot_dialog
 
 class XAIGUI(QMainWindow):
     """XAI GUI 메인 클래스"""
@@ -95,10 +95,14 @@ class XAIGUI(QMainWindow):
         self.saveScreenBtn.clicked.connect(self._on_save_snapshot)
         self.openMultiImageViewerBtn.clicked.connect(self.open_multi_image_viewer)
         
+        # 2D 로짓 플롯 버튼 추가
+        self.logitPlotBtn.clicked.connect(self.open_logit_plot_dialog)
+        
         # 초기 상태 설정
         self.targetClassCombo.setEnabled(False)
         self.runXaiBtn.setEnabled(False)
         self.saveScreenBtn.setEnabled(False)
+        self.logitPlotBtn.setEnabled(False)
         
         # 리스트 이벤트 연결
         self.explainerListWidget.itemDoubleClicked.connect(self.remove_selected_explainer)
@@ -139,6 +143,9 @@ class XAIGUI(QMainWindow):
             self.checkpointLabel.setText(f"로드됨: {os.path.basename(file_path)}")
             self.infoText.append(f"[✓] 체크포인트 로드 완료 - 모델: {self.config.get('model', 'Unknown')}")
             self.infoText.append(f"[✓] 클래스 수: {self.config.get('num_classes', '?')}")
+            
+            # 2D 로짓 플롯 버튼 활성화
+            self.logitPlotBtn.setEnabled(True)
 
         except Exception as e:
             import traceback
@@ -440,6 +447,8 @@ class XAIGUI(QMainWindow):
             normalize = self.config['dataset_config']['transform']['normalize']
             mean = normalize['mean']
             std = normalize['std']
+            print("MEAN", mean)
+            print("STD", std)
         else:
             mean = [0.485, 0.456, 0.406]
             std = [0.229, 0.224, 0.225]
@@ -505,6 +514,17 @@ class XAIGUI(QMainWindow):
         files, _ = QFileDialog.getOpenFileNames(self, "PNG 이미지 선택", snapshot_dir, "PNG Files (*.png)")
         if files:
             show_images_in_dialog(files, parent=self)
+
+    def open_logit_plot_dialog(self):
+        """2D 로짓 플롯 다이얼로그 열기"""
+        if self.model is None or self.config is None:
+            QMessageBox.warning(self, "경고", "먼저 체크포인트를 로드해주세요.")
+            return
+            
+        try:
+            show_logit_plot_dialog(self.model, self.config, self.explainer_config, self)
+        except Exception as e:
+            QMessageBox.critical(self, "오류", f"2D 로짓 플롯 다이얼로그 열기 실패: {str(e)}")
 
 
 def main():

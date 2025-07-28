@@ -23,6 +23,7 @@ model_structure: &id001
 dataset_config:
   name: STL10
   root: C:\Users\orgin\Desktop\ForTest\stl10_test
+  dir_root : 
   num_classes: 10
   batch_size: 128
   num_workers: 10

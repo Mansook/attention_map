@@ -70,6 +70,20 @@ explainer_dict:
         sampling_size: 1000
       ResNet34:
         sampling_size: 1000
+  permutation_shap:
+    class: PERMUTATION_SHAP
+    type : "absolute"
+    description: "Permutation SHAP"
+    cmap: "jet"
+    slic:
+      forced : True
+      size : 10
+      ruler : 5
+    model:
+      ResNet18:
+        sampling_size: 1000
+      ResNet34:
+        sampling_size: 1000
   lmap:
       class: LMAP
       type : "absolute"
