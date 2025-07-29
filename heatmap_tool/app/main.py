@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import (
 # 상위 디렉토리 모듈들 import
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dataset.datasetLoader import get_dataloaders
-from explainers import CAM, IG, RISE, GradCAM, SmoothGrad, SHAP, LMAP
+from explainers import CAM, IG, RISE, GradCAM, SmoothGrad, SHAP, LMAP, PERMUTATION_SHAP
 from models import CustomResNet34, ResNetClassifier
 from utils.explainer_add_dialog import ExplainerAddDialog
 from utils.explainer_tooltip import make_explainer_tooltip

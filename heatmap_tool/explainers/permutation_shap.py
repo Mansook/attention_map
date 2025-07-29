@@ -20,223 +20,94 @@ class PERMUTATION_SHAP(nn.Module):
         self.sampling_size = config_dict.get('sampling_size', 100)
         self.slic_size = config_dict.get('slic_size', 10)
         self.slic_ruler = config_dict.get('slic_ruler', 5)
-        self.progress_callback = None  # 진행률 콜백 (XAIWorker에서 설정)
+        self.progress_callback = None
         self.samples_dir = "C:/Users/orgin/XAI-study/heatmap_tool/"
         self.save_samples = True
+        
     def generate(self,input_tensor,class_idx=None):
-        # 입력 텐서 정보 출력
-        print(f"[SHAP] input_tensor - dtype: {input_tensor.dtype}, shape: {input_tensor.shape}")
-        print(f"[SHAP] input_tensor - min: {input_tensor.min()}, max: {input_tensor.max()}")
+        print(f"[DEBUG] input_tensor shape: {input_tensor.shape}")
         
-        input_3d = input_tensor.squeeze()  # [C, H, W] 또는 [H, W]로 변환
-        if input_3d.dim() == 2:  # [H, W]인 경우
-            input_3d = input_3d.unsqueeze(0)  # [1, H, W]로 변환
+        input_3d = input_tensor.squeeze()
+        print(f"[DEBUG] input_3d shape after squeeze: {input_3d.shape}")
         
-        # 변환 후 정보 출력
-        print(f"[SHAP] input_3d - dtype: {input_3d.dtype}, shape: {input_3d.shape}")
-        print(f"[SHAP] input_3d - min: {input_3d.min()}, max: {input_3d.max()}")
+        if input_3d.dim() == 2:
+            input_3d = input_3d.unsqueeze(0)
+            print(f"[DEBUG] input_3d shape after unsqueeze: {input_3d.shape}")
         
-        # SLIC로 슈퍼픽셀 라벨과 경계선 추출
+        # SLIC로 슈퍼픽셀 라벨 추출
         labels, boundary = superpixel_mean_map(input_tensor, region_size=self.slic_size, ruler=self.slic_ruler)
-        #print(f"[SHAP] labels shape: {labels.shape}, unique labels: {np.unique(labels)}")
-        #print(f"[SHAP] boundary shape: {boundary.shape}")
+        print(f"[DEBUG] labels shape: {labels.shape}")
+        print(f"[DEBUG] unique labels: {np.unique(labels)}")
         
-        unique_labels = np.unique(labels)  # 모든 고유한 슈퍼픽셀 라벨들 (예: [0, 1, 2, 3, ...])
+        unique_labels = np.unique(labels)
         num_superpixels = len(unique_labels)
-
-
-        samples_matrix = np.zeros((self.sampling_size, num_superpixels))
-        predictions = np.zeros(self.sampling_size)
+        print(f"[DEBUG] num_superpixels: {num_superpixels}")
+        
+        # 미리 마스크 생성 (메모리 효율성)
+        masks = {}
+        for label in unique_labels:
+            mask = (labels == label)
+            masks[label] = mask
+            print(f"[DEBUG] mask for label {label} shape: {mask.shape}")
+        
+        # 배치 처리를 위한 마스크 텐서 미리 생성
+        mask_tensors = {}
+        for label, mask in masks.items():
+            mask_3d = np.stack([mask] * input_3d.shape[0], axis=0)
+            print(f"[DEBUG] mask_3d for label {label} shape: {mask_3d.shape}")
+            mask_tensors[label] = torch.from_numpy(mask_3d).bool()
+            print(f"[DEBUG] mask_tensor for label {label} shape: {mask_tensors[label].shape}")
+        
         shap_values = np.zeros(num_superpixels)
         
-        
+        # 순열 생성
         permutation_list = [np.random.permutation(unique_labels) for _ in range(self.sampling_size)]
-        for permut in permutation_list:
-            basis = np.zeros_like(input_3d)
-            basis_tensor = torch.from_numpy(basis).unsqueeze(0).float()
-            basis_score = 0
-            mask = np.zeros_like(labels)
-            with torch.no_grad():
-                output = self.model(basis_tensor)
-                if class_idx is not None:
-                    basis_score = output[0, class_idx].item()
-                else:
-                    basis_score = output.max(1)[1].item()
-
-            for idx, val in enumerate(permut):
-                
-                progress_percent = int((idx / num_superpixels) * 100)
-                if self.progress_callback:
-                    self.progress_callback(progress_percent, "SHAP")
-                
-                mask += labels == val
-                mask_3d = np.stack([mask] * input_3d.shape[0], axis=0) 
-                basis[mask_3d] = input_3d[mask_3d]
-                basis_tensor = torch.from_numpy(basis).unsqueeze(0).float()
-                output = self.model(basis_tensor)
-                if class_idx is not None:
-                    new_score = output[0, class_idx].item()
-                else:
-                    new_score = output.max(1)[1].item()
-                shap_values[val] += new_score - basis_score
-                basis_score = new_score
-                
-                
-                
-            
-        for i in range(self.sampling_size):
-            # 진행률 계산 및 콜백 호출
-            progress_percent = int((i / self.sampling_size) * 100)
-            if self.progress_callback:
-                self.progress_callback(progress_percent, "SHAP")
-            
-            index = np.zeros(num_superpixels)
-            # 3D 이미지로 생성 (원본 input_3d와 같은 shape)
-            sample = np.zeros_like(input_3d)  # (C, H, W) 또는 (H, W)
-            # 0부터 num_superpixels-1 중에서 랜덤 숫자 하나 선택
-            random_integer = random.randint(0, num_superpixels-1)
-            #print(f"[SHAP] 샘플 {i}: 랜덤 숫자: {random_integer}")
-            # sample 배열에서 1의 개수가 random_integer개가 되도록 랜덤 위치에 1을 할당
-            if random_integer > 0:
-                ones_indices = random.sample(range(num_superpixels), random_integer)
-                index[ones_indices] = 1
-            #print(f"[SHAP] 샘플 {i}: index: {index}")
-            
-            # 샘플링 행렬에 저장
-            samples_matrix[i] = index
-            
-            for idx, val in enumerate(index):
-                mask = labels == idx  # (H, W) boolean mask
-                # mask를 3차원으로 확장 (C, H, W)
-                if input_3d.ndim == 3:
-                    mask_3d = np.stack([mask] * input_3d.shape[0], axis=0)  # (C, H, W)
-                else:
-                    mask_3d = mask  # 2D면 그대로
-                
-                if val == 1:  # 1이면 원본 이미지
-                    sample[mask_3d] = input_3d[mask_3d]
-                    
-                else:  # 0이면 검은색
-                    sample[mask_3d] = 0  # 검은색
-                #print("mask_3d shape", mask_3d.shape)
-                #print("input_3d shape", input_3d.shape)
-                #print("sample shape", sample.shape)
-            # 샘플을 PNG로 저장
-            #self._save_sample_as_png(sample, i, samples_path)
-            
-       
-            # 모델 예측
-            sample_tensor = torch.from_numpy(sample).unsqueeze(0).float()
-            
-            # 디버깅: 모델 입력 텐서 검증
-            if i < 3:
-                print(f"[SHAP DEBUG] 모델 입력 텐서 {i} - dtype: {sample_tensor.dtype}, min: {sample_tensor.min()}, max: {sample_tensor.max()}")
-            
-            with torch.no_grad():
-                output = self.model(sample_tensor)
-                if class_idx is not None:
-                    pred = output[0, class_idx].item()
-                else:
-                    pred = output.max(1)[1].item()
-            predictions[i] = pred
-            
-            if i < 3:
-                print(f"[SHAP DEBUG] 샘플 {i} 예측값: {pred}")
+        basis = torch.zeros_like(input_3d.unsqueeze(0))
+        print(f"[DEBUG] basis shape: {basis.shape}")
+        print(f"[DEBUG] basis[0] shape: {basis[0].shape}")
+        basis_score = 0
         
-        # 100% 완료 신호
-        if self.progress_callback:
-            self.progress_callback(100, "SHAP")
-        
-        # 선형회귀로 SHAP 값 추정
-        #print(f"[SHAP] 선형회귀 시작...")
-        #print(f"[SHAP] samples_matrix shape: {samples_matrix.shape}")
-        #print(f"[SHAP] predictions shape: {predictions.shape}")
-        
-        # Kernel SHAP 가중치 계산 (Lundberg & Lee, 2017)
-        weights = self._kernel_weights(samples_matrix)
-        
-        # 가중 선형회귀
-        lr = LinearRegression()
-        lr.fit(samples_matrix, predictions, sample_weight=weights)
-        
-        # SHAP 값 (편향 제외)
-        shap_values = lr.coef_
-        #print(f"[SHAP] SHAP 값: {shap_values}")
-        
-        # 히트맵 생성
-        # heatmap의 shape이 어떻게 되는지 확인 (labels와 동일)
-        print(f"[SHAP] labels shape: {labels.shape}")  # 예: (H, W), 예를 들어 2x2면 (2, 2)
-        heatmap = np.zeros_like(labels, dtype=np.float32)
-        for idx, shap_value in enumerate(shap_values):
-            mask = labels == idx
-            heatmap[mask] = shap_value
-        heatmap = process_heatmap_by_type(heatmap, self.type)
-        print(f"[SHAP] heatmap shape: {heatmap.shape}, min: {heatmap.min()}, max: {heatmap.max()}")
-        return heatmap
-    
-    def _save_sample_as_png(self, sample, sample_idx, save_dir):
-        """샘플을 PNG 파일로 저장"""
-        try:
-            # sample을 이미지 형태로 변환
-            if sample.ndim == 3:  # (C, H, W)
-                # 채널이 1개인 경우 (그레이스케일)
-                if sample.shape[0] == 1:
-                    img = sample[0]  # (H, W)
-                # 채널이 3개인 경우 (RGB)
-                elif sample.shape[0] == 3:
-                    img = np.transpose(sample, (1, 2, 0))  # (H, W, C)
-                else:
-                    # 첫 번째 채널만 사용
-                    img = sample[0]
-            else:  # (H, W)
-                img = sample
-            
-            # 데이터 정보 출력
-            print(f"[SHAP] 샘플 {sample_idx} - dtype: {img.dtype}, min: {img.min()}, max: {img.max()}")
-            
-            # ImageNet 정규화 역변환
-            if img.dtype == np.float32 or img.dtype == np.float64:
-                # ImageNet 평균과 표준편차
-                mean = np.array([0.485, 0.456, 0.406])
-                std = np.array([0.229, 0.224, 0.225])
-                
-                # 역정규화: (x * std) + mean
-                if img.ndim == 3 and img.shape[2] == 3:  # RGB 이미지
-                    img = img * std + mean
-                
-                # 0~1 범위로 클리핑 후 0~255로 변환
-                img = np.clip(img, 0, 1)
-                img = (img * 255).astype(np.uint8)
-            
-            # 파일명 생성
-            filename = f"sample_{sample_idx:04d}.png"
-            filepath = os.path.join(save_dir, filename)
-            
-            # PNG로 저장
-            cv2.imwrite(filepath, img)
-            print(f"[SHAP] 샘플 {sample_idx} 저장됨: {filepath}")
-            
-        except Exception as e:
-            print(f"[SHAP] 샘플 {sample_idx} 저장 실패: {e}")
-    
-    def _kernel_weights(self, samples_matrix):
-        """Kernel SHAP 가중치 계산 (Lundberg & Lee, 2017)"""
-        weights = []
-        for sample in samples_matrix:
-            # 활성화된 feature 수
-            num_active = np.sum(sample)
-            # 전체 feature 수
-            num_total = len(sample)
-            
-            # Kernel SHAP 가중치 공식
-            if num_active == 0 or num_active == num_total:
-                weight = 1e6  # 매우 큰 가중치 (전체 포함/제외)
+        with torch.no_grad():
+            # 베이스 점수 계산
+            output = self.model(basis)
+            if class_idx is not None:
+                store_basis_score = output[0, class_idx].item()
             else:
-                weight = (num_total - 1) / (num_active * (num_total - num_active))
-            
-            weights.append(weight)
+                store_basis_score = output.max(1)[1].item()
+
+        for perm_idx, permut in enumerate(permutation_list):
+            # 각 순열마다 빈 이미지로 시작
+            basis = torch.zeros_like(input_3d.unsqueeze(0))
+            basis_score = store_basis_score  # 빈 이미지의 점수
+    
+            # 순열 순서대로 슈퍼픽셀을 하나씩 누적해서 추가
+            for idx, val in enumerate(permut):
+                progress_percent = int((perm_idx * num_superpixels + idx) / (self.sampling_size * num_superpixels) * 100)
+                if self.progress_callback:
+                    self.progress_callback(progress_percent, "PERMUT_SHAP")
+                
+                # 현재 슈퍼픽셀을 basis에 추가
+                mask_tensor = mask_tensors[val]
+                print(f"[DEBUG] mask_tensor shape: {mask_tensor.shape}")
+                print(f"[DEBUG] input_3d shape: {input_3d.shape}")
+                print(f"[DEBUG] basis[0] shape: {basis[0].shape}")
+                basis[0][mask_tensor] = input_3d[mask_tensor]
+                
+                # 추가된 이미지로 모델 추론
+                with torch.no_grad():
+                    output = self.model(basis)
+                    if class_idx is not None:
+                        new_score = output[0, class_idx].item()
+                    else:
+                        new_score = output.max(1)[1].item()
+                
+                # 점수 변화를 해당 슈퍼픽셀의 SHAP 값에 누적
+                shap_values[val] += new_score - basis_score
+                basis_score = new_score  # 다음 단계를 위한 점수 업데이트
         
-        return np.array(weights)
-        
+        shap_values /= self.sampling_size
+        heatmap = shap_values[labels]
+        heatmap = process_heatmap_by_type(heatmap, self.type)
+        return heatmap
         
         
