@@ -92,10 +92,8 @@ def process_heatmap_by_type(heatmap_tensor, type_name):
             vmin = np.percentile(-heatmap, 1)
             heatmap = -np.clip((-heatmap - vmin) / (vmax - vmin + 1e-8), 0, 1)
     elif type_name == 'both':
-        # 양수/음수 모두 모드: 전체 범위로 정규화
-        if heatmap.max() > 0 or heatmap.min() < 0:
-            vmax = np.percentile(heatmap, 99)
-            vmin = np.percentile(heatmap, 1)
-            heatmap = np.clip((heatmap - vmin) / (vmax - vmin + 1e-8), -1, 1)
+        # 양수/음수 모두 모드: raw value 그대로 사용 (정규화 없음)
+        # 정확히 0인 부분을 시각적으로 확인할 수 있도록
+        pass  # 원본 값 그대로 사용, 정규화하지 않음
     
     return heatmap 

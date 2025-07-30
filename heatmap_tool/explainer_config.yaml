@@ -95,9 +95,9 @@ explainer_dict:
         ruler : 5
       model:
         ResNet18:
-          sampling_size: 1000
+          sampling_size: 20
         ResNet34:
-          sampling_size: 1000
+          sampling_size: 20
   # 필요시 추가 explainer
   # my_custom_xai:
   #   class: MyCustomXAI

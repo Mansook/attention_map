@@ -23,7 +23,8 @@ class SHAP(nn.Module):
         self.slic_ruler = config_dict.get('slic_ruler', 5)
         self.progress_callback = None
         self.samples_dir = "C:/Users/orgin/XAI-study/heatmap_tool/"
-        self.save_samples = True
+        self.save_result = config_dict.get('save_result', True)
+        
     def generate(self,input_tensor,class_idx=None):
         start_time = time.time()
         print(f"[SHAP] 시작 시간: {datetime.now().strftime('%H:%M:%S')}")
@@ -42,12 +43,6 @@ class SHAP(nn.Module):
         
         unique_labels = np.unique(labels)
         num_superpixels = len(unique_labels)
-        
-        if self.save_samples:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            samples_path = os.path.join(self.samples_dir, f"shap_samples_{timestamp}")
-            os.makedirs(samples_path, exist_ok=True)
-            print(f"[SHAP] 샘플 저장 경로: {samples_path}")
         
         samples_matrix = np.zeros((self.sampling_size, num_superpixels))
         predictions = np.zeros(self.sampling_size)
@@ -113,6 +108,10 @@ class SHAP(nn.Module):
         heatmap = process_heatmap_by_type(heatmap, self.type)
         print(f"[SHAP] heatmap shape: {heatmap.shape}, min: {heatmap.min()}, max: {heatmap.max()}")
         
+        # 최종 히트맵 결과 저장
+        if self.save_result:
+            self._save_heatmap_result(heatmap, class_idx)
+        
         end_time = time.time()
         elapsed_time = end_time - start_time
         print(f"[SHAP] 종료 시간: {datetime.now().strftime('%H:%M:%S')}")
@@ -120,38 +119,57 @@ class SHAP(nn.Module):
         
         return heatmap
     
-    def _save_sample_as_png(self, sample, sample_idx, save_dir):
+    def _save_heatmap_result(self, heatmap, class_idx=None):
+        """최종 히트맵 결과를 PNG 파일로 저장"""
         try:
-            if sample.ndim == 3:
-                if sample.shape[0] == 1:
-                    img = sample[0]
-                elif sample.shape[0] == 3:
-                    img = np.transpose(sample, (1, 2, 0))
-                else:
-                    img = sample[0]
-            else:
-                img = sample
+            # 클래스 라벨 가져오기 (class_idx가 있는 경우)
+            class_label = ""
+            if class_idx is not None:
+                try:
+                    # class_map에서 라벨 가져오기 (모델의 class_map 사용)
+                    if hasattr(self.model, 'class_map') and self.model.class_map:
+                        class_label = self.model.class_map.get(class_idx, f"class{class_idx}")
+                    else:
+                        class_label = f"class{class_idx}"
+                except:
+                    class_label = f"class{class_idx}"
             
-            print(f"[SHAP] 샘플 {sample_idx} - dtype: {img.dtype}, min: {img.min()}, max: {img.max()}")
+            # 이미지명으로 디렉토리 생성
+            dir_name = self.image_info
             
-            if img.dtype == np.float32 or img.dtype == np.float64:
-                mean = np.array([0.485, 0.456, 0.406])
-                std = np.array([0.229, 0.224, 0.225])
-                
-                if img.ndim == 3 and img.shape[2] == 3:
-                    img = img * std + mean
-                
-                img = np.clip(img, 0, 1)
-                img = (img * 255).astype(np.uint8)
+            # cache 디렉토리 생성 및 저장 경로 설정
+            cache_dir = os.path.join(self.samples_dir, "cache")
+            os.makedirs(cache_dir, exist_ok=True)
             
-            filename = f"sample_{sample_idx:04d}.png"
-            filepath = os.path.join(save_dir, filename)
+            # 최종 저장 디렉토리 생성
+            result_dir = os.path.join(cache_dir, dir_name)
+            os.makedirs(result_dir, exist_ok=True)
             
-            cv2.imwrite(filepath, img)
-            print(f"[SHAP] 샘플 {sample_idx} 저장됨: {filepath}")
+            # 파일명 생성 (target label로 저장)
+            filename = f"{class_label}.png" if class_label else "unknown.png"
+            filepath = os.path.join(result_dir, filename)
+            
+            # matplotlib을 사용해서 컬러 히트맵 생성 및 저장
+            import matplotlib.pyplot as plt
+            import matplotlib.cm as cm
+            
+            plt.figure(figsize=(8, 6))
+            plt.imshow(heatmap, cmap='jet')
+            plt.axis('off')
+            plt.colorbar()
+            plt.title(f"SHAP Heatmap - {class_label}" if class_label else "SHAP Heatmap")
+            
+            plt.savefig(filepath, bbox_inches='tight', pad_inches=0, dpi=150)
+            plt.close()
+            
+            print(f"[SHAP] 히트맵 저장됨: {filepath}")
+            print(f"[SHAP] 디렉토리 구조: {dir_name}/{filename}")
+            print(f"[SHAP] 히트맵 통계 - Min: {heatmap.min():.4f}, Max: {heatmap.max():.4f}, Mean: {heatmap.mean():.4f}")
             
         except Exception as e:
-            print(f"[SHAP] 샘플 {sample_idx} 저장 실패: {e}")
+            print(f"[SHAP] 히트맵 저장 실패: {e}")
+            import traceback
+            traceback.print_exc()
     
     def _kernel_weights(self, samples_matrix):
         weights = []
