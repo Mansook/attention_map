@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+# =============================================================================
+# IMPORT SECTION
+# =============================================================================
 import os
 import re
 import sys
@@ -29,6 +33,10 @@ from utils.xaiworker import XAIWorker
 from utils.visualization import save_widget_as_image_auto, save_snapshot_auto
 from dialog.logitPlot import show_logit_plot_dialog
 
+
+# =============================================================================
+# MAIN GUI CLASS
+# =============================================================================
 class XAIGUI(QMainWindow):
     """XAI GUI 메인 클래스"""
     
@@ -44,6 +52,9 @@ class XAIGUI(QMainWindow):
         self._connect_signals()
         self.resize(2600, 1200)
 
+    # =============================================================================
+    # INITIALIZATION METHODS
+    # =============================================================================
     def _init_ui(self):
         """UI 초기화"""
         setup_korean_font()
@@ -85,6 +96,9 @@ class XAIGUI(QMainWindow):
         self.progress_update.connect(self.progressBar.setValue)
         self.progress_text_update.connect(self.progressInfo.setText)
 
+    # =============================================================================
+    # UI SETUP METHODS
+    # =============================================================================
     def setup_ui(self):
         """UI 설정"""
         # 버튼 연결
@@ -112,6 +126,9 @@ class XAIGUI(QMainWindow):
         # 라벨 바인딩
         self.predictedClassLabel = self.findChild(QLabel, "predictedClassLabel")
 
+    # =============================================================================
+    # MODEL & CHECKPOINT LOADING METHODS
+    # =============================================================================
     def load_checkpoint(self):
         """체크포인트 로드"""
         default_path = os.path.join(
@@ -204,6 +221,9 @@ class XAIGUI(QMainWindow):
         except Exception as e:
             raise Exception(f"모델 로드 실패: {str(e)}")
 
+    # =============================================================================
+    # IMAGE LOADING & PROCESSING METHODS
+    # =============================================================================
     def load_image(self):
         """이미지 로드 및 전처리"""
         if self.model is None:
@@ -287,6 +307,9 @@ class XAIGUI(QMainWindow):
             f"현재 예측 클래스: {self.class_map.get(predicted_class, str(predicted_class))}"
         )
 
+    # =============================================================================
+    # EXPLAINER MANAGEMENT METHODS
+    # =============================================================================
     def open_add_explainer_dialog(self):
         """Explainer 추가 다이얼로그"""
         dialog = ExplainerAddDialog(
@@ -360,6 +383,9 @@ class XAIGUI(QMainWindow):
                     del self.current_explainees[name]
                     self.infoText.append(f"Explainer 및 Explainee 캐시 삭제: {name}")
 
+    # =============================================================================
+    # XAI EXECUTION METHODS
+    # =============================================================================
     def run_xai(self):
         """XAI 실행"""
         if self.current_image_tensor is None:
@@ -428,6 +454,9 @@ class XAIGUI(QMainWindow):
         self.progressBar.setVisible(False)
         self.progressInfo.setText("진행중인 작업 없음")
 
+    # =============================================================================
+    # VISUALIZATION METHODS
+    # =============================================================================
     def visualize_results(self):
         """결과 시각화"""
         # 기존 위젯 제거
@@ -498,6 +527,9 @@ class XAIGUI(QMainWindow):
         self.infoText.append(f"히트맵 생성 완료: {len(self.heatmap_results)}개")
         self.saveScreenBtn.setEnabled(True)
 
+    # =============================================================================
+    # UTILITY & DIALOG METHODS
+    # =============================================================================
     def _on_save_snapshot(self):
         """스냅샷 저장"""
         filename = save_snapshot_auto(self.vizWidget, self.infoText)
@@ -527,6 +559,9 @@ class XAIGUI(QMainWindow):
             QMessageBox.critical(self, "오류", f"2D 로짓 플롯 다이얼로그 열기 실패: {str(e)}")
 
 
+# =============================================================================
+# MAIN FUNCTION
+# =============================================================================
 def main():
     """메인 함수"""
     app = QApplication(sys.argv)

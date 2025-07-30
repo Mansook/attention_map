@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+# =============================================================================
+# IMPORT SECTION
+# =============================================================================
 import os
 import sys
 import numpy as np
@@ -13,15 +17,19 @@ from PyQt5.QtWidgets import (
     QLabel, QListWidget, QMessageBox, QProgressBar, QWidget, QFileDialog
 )
 from utils.xaiworker import XAIWorker
+
 # 상위 디렉토리 모듈들 import
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dataset.datasetLoader import get_dataloaders
-from explainers import CAM, IG, RISE, GradCAM, SmoothGrad, SHAP, LMAP
+from explainers import CAM, IG, RISE, GradCAM, SmoothGrad, SHAP, LMAP, PERMUTATION_SHAP
 from utils.explainer_add_dialog import ExplainerAddDialog
 from utils.get_class_name_by_index import get_class_name_by_index
 from utils.set_korean import setup_korean_font
 
 
+# =============================================================================
+# WORKER CLASSES (백그라운드 처리)
+# =============================================================================
 class LogitDataWorker(QThread):
     """로짓 데이터 계산을 위한 워커 스레드"""
     progress_update = pyqtSignal(int)
@@ -103,6 +111,9 @@ class LogitDataWorker(QThread):
             self.error.emit(str(e))
 
 
+# =============================================================================
+# MAIN DIALOG CLASS
+# =============================================================================
 class LogitPlotDialog(QDialog):
     """2D 로짓 플롯 다이얼로그"""
     
@@ -118,11 +129,16 @@ class LogitPlotDialog(QDialog):
         self.explainers = {}
         self.current_explainee = None
         self.local_data_path = None
+        self.basis_class_name = "dog"  # 기본값 설정
+        self.basis_class_index = 5     # 기본값 설정
         
         self._init_ui()
         self._load_data()
         self._setup_ui()
         
+    # =============================================================================
+    # UI INITIALIZATION METHODS
+    # =============================================================================
     def _init_ui(self):
         """UI 초기화"""
         setup_korean_font()
@@ -162,9 +178,9 @@ class LogitPlotDialog(QDialog):
         
         layout.addSpacing(10)
         
-        # Basis 클래스 (고정 - dog)
+        # Basis 클래스 (동적 변경 가능)
         layout.addWidget(QLabel("Basis 클래스 (X축):"))
-        self.basis_label = QLabel("dog (고정)")
+        self.basis_label = QLabel("선택된 디렉토리명")
         layout.addWidget(self.basis_label)
         
         # Target 클래스 선택
@@ -278,42 +294,93 @@ class LogitPlotDialog(QDialog):
         panel.setLayout(layout)
         return panel
         
+    def _setup_ui(self):
+        """UI 설정"""
+        # 플롯 클릭 이벤트 연결
+        self.canvas.mpl_connect('button_press_event', self._on_plot_click)
+        
+    # =============================================================================
+    # DATA LOADING METHODS
+    # =============================================================================
+    def _load_data(self):
+        """데이터 로드 (기본값으로 로컬 경로 설정)"""
+        # 기본 로컬 경로 설정만 하고 데이터는 로드하지 않음
+        base_path = "C:/Users/orgin/Desktop/ForTest"  # 기본 경로를 상위 디렉토리로 변경
+        if os.path.exists(base_path):
+            self.base_data_path = base_path
+            self.data_path_label.setText("데이터 경로를 선택하세요")
+            # 초기에는 데이터 로드하지 않음
+        else:
+            self.data_path_label.setText("데이터 경로를 선택하세요")
+            
+        # 콤보박스 설정 (데이터 로드와 관계없이)
+        self._setup_class_combos_with_basis([], "dog")  # 기본값으로 dog 설정
+
     def _select_data_path(self):
         """데이터 경로 선택"""
-        default_path = "C:/Users/orgin/Desktop/ForTest/dog"
+        default_path = "C:/Users/orgin/Desktop/ForTest"
         data_path = QFileDialog.getExistingDirectory(
             self, "로컬 데이터 디렉토리 선택", default_path
         )
         
         if data_path:
             self.local_data_path = data_path
-            self.data_path_label.setText(f"선택됨: {os.path.basename(data_path)}")
-            self._load_local_data()
+            basis_dir_name = os.path.basename(data_path)
+            self.data_path_label.setText(f"선택됨: {basis_dir_name}")
+            self.basis_label.setText(f"{basis_dir_name} (고정)")
             
-    def _load_data(self):
-        """데이터 로드 (기본값으로 로컬 경로 설정)"""
-        # 기본 로컬 경로 설정만 하고 데이터는 로드하지 않음
-        base_path = "C:/Users/orgin/Desktop/ForTest/dog"  # dog 디렉토리로 변경
-        if os.path.exists(base_path):
-            self.base_data_path = base_path
-            self.data_path_label.setText(f"기본 경로: {os.path.basename(base_path)}")
-            # 초기에는 데이터 로드하지 않음
-        else:
-            self.data_path_label.setText("데이터 경로를 선택하세요")
+            # 선택된 디렉토리가 유효한지 확인
+            self._validate_and_setup_basis_directory(data_path, basis_dir_name)
+
+    def _validate_and_setup_basis_directory(self, data_path, basis_dir_name):
+        """선택된 디렉토리가 유효한지 확인하고 설정"""
+        try:
+            # 디렉토리 내부 확인
+            subdirs = [d for d in os.listdir(data_path) if os.path.isdir(os.path.join(data_path, d))]
+            print(f"선택된 디렉토리 내용: {subdirs}")
             
-        # 콤보박스 설정 (데이터 로드와 관계없이)
-        self._setup_class_combos()
+            # STL10 클래스명들
+            stl10_classes = ["airplane", "bird", "car", "cat", "deer", "dog", "horse", "monkey", "ship", "truck"]
             
-    def _setup_class_combos(self):
-        """클래스 콤보박스 설정"""
+            # 선택된 디렉토리 안에 STL10 클래스 디렉토리들이 있는지 확인
+            valid_classes = [cls for cls in stl10_classes if cls in subdirs]
+            
+            if len(valid_classes) >= 2:  # 최소 2개 이상의 클래스가 있어야 함
+                self.base_data_path = data_path
+                self.basis_class_name = basis_dir_name
+                
+                # basis 클래스 인덱스 찾기
+                if basis_dir_name in stl10_classes:
+                    self.basis_class_index = stl10_classes.index(basis_dir_name)
+                else:
+                    # basis 디렉토리명이 STL10 클래스에 없는 경우, dog를 기본값으로 사용
+                    self.basis_class_index = 5  # dog
+                    print(f"경고: {basis_dir_name}이 STL10 클래스에 없어서 dog(인덱스 5)를 basis로 사용합니다.")
+                
+                print(f"Basis 클래스 설정: {basis_dir_name} (인덱스: {self.basis_class_index})")
+                print(f"유효한 클래스들: {valid_classes}")
+                
+                # 콤보박스 설정
+                self._setup_class_combos_with_basis(valid_classes, basis_dir_name)
+                
+                QMessageBox.information(self, "성공", f"Basis 디렉토리 설정 완료: {basis_dir_name}\n유효한 클래스: {len(valid_classes)}개")
+                
+            else:
+                QMessageBox.warning(self, "경고", f"선택된 디렉토리에 유효한 클래스 디렉토리가 부족합니다.\n필요: 최소 2개, 현재: {len(valid_classes)}개")
+                
+        except Exception as e:
+            QMessageBox.critical(self, "오류", f"디렉토리 검증 실패: {str(e)}")
+
+    def _setup_class_combos_with_basis(self, valid_classes, basis_dir_name):
+        """basis를 고려한 클래스 콤보박스 설정"""
         # STL10 클래스명 사용
         stl10_classes = ["airplane", "bird", "car", "cat", "deer", "dog", "horse", "monkey", "ship", "truck"]
         
-        # 콤보박스에 클래스 추가 (dog 제외)
+        # 콤보박스에 클래스 추가 (basis 제외)
         self.target_combo.clear()
         
         for i, class_name in enumerate(stl10_classes):
-            if class_name != "dog":  # dog는 basis로 고정
+            if class_name != basis_dir_name:  # basis 클래스 제외
                 self.target_combo.addItem(class_name, i)
                 
         # target 클래스 변경 시 데이터 다시 로드
@@ -331,13 +398,13 @@ class LogitPlotDialog(QDialog):
         if not hasattr(self, 'base_data_path') or not class_name:
             return
             
-        # target: dog 디렉토리 안의 해당 클래스 디렉토리
+        # target: 선택된 디렉토리 안의 해당 클래스 디렉토리
         target_path = os.path.join(self.base_data_path, class_name)
         target_path = target_path.replace('\\', '/')
         print(f"target 시도하는 경로: {target_path}")
         
-        # basis: dog 디렉토리 안의 dog 디렉토리
-        basis_path = os.path.join(self.base_data_path, "dog")
+        # basis: 선택된 디렉토리 안의 basis 클래스 디렉토리
+        basis_path = os.path.join(self.base_data_path, self.basis_class_name)
         basis_path = basis_path.replace('\\', '/')
         print(f"basis 시도하는 경로: {basis_path}")
         
@@ -419,11 +486,9 @@ class LogitPlotDialog(QDialog):
             traceback.print_exc()
             QMessageBox.critical(self, "오류", f"데이터 로드 실패: {str(e)}")
             
-    def _setup_ui(self):
-        """UI 설정"""
-        # 플롯 클릭 이벤트 연결
-        self.canvas.mpl_connect('button_press_event', self._on_plot_click)
-        
+    # =============================================================================
+    # PLOT METHODS
+    # =============================================================================
     def _update_plot(self):
         """플롯 업데이트"""
         if not hasattr(self, 'target_loader') or not hasattr(self, 'basis_loader') or self.target_loader is None or self.basis_loader is None:
@@ -433,8 +498,8 @@ class LogitPlotDialog(QDialog):
         # 모델을 eval 모드로 설정
         self.model.eval()
         
-        # dog는 5번 인덱스
-        basis_class = 5  # dog
+        # basis 클래스 인덱스 사용
+        basis_class = self.basis_class_index
         target_class = self.target_combo.currentData()
         
         if basis_class == target_class:
@@ -500,9 +565,10 @@ class LogitPlotDialog(QDialog):
         
         # 축 레이블
         target_name = self.target_combo.currentText()
-        ax.set_xlabel("dog 로짓", fontsize=14)
+        basis_name = self.basis_class_name
+        ax.set_xlabel(f"{basis_name} 로짓", fontsize=14)
         ax.set_ylabel(f"{target_name} 로짓", fontsize=14)
-        ax.set_title("2D 로짓 플롯 (dog vs target)", fontsize=16, fontweight='bold')
+        ax.set_title(f"2D 로짓 플롯 ({basis_name} vs {target_name})", fontsize=16, fontweight='bold')
         
         # 격자 추가
         ax.grid(True, alpha=0.3, linestyle='--')
@@ -520,11 +586,11 @@ class LogitPlotDialog(QDialog):
         ax.set_ylim(min_val - 0.1, max_val + 0.1)
         
         # 통계 정보 표시
-        dog_count = sum(1 for pred in predicted_classes if pred == 0)
-        target_count = len(predicted_classes) - dog_count
+        basis_count = sum(1 for pred in predicted_classes if pred == 0)
+        target_count = len(predicted_classes) - basis_count
         
         info_text = f'총 {len(basis_logits)}개 포인트\n'
-        info_text += f'dog 예측: {dog_count}개\n'
+        info_text += f'{basis_name} 예측: {basis_count}개\n'
         info_text += f'{target_name} 예측: {target_count}개'
         
         ax.text(0.02, 0.98, info_text, 
@@ -562,6 +628,9 @@ class LogitPlotDialog(QDialog):
         # 플롯 다시 그리기 (선택된 포인트 강조)
         self._draw_plot()
         
+    # =============================================================================
+    # POINT INFO & IMAGE DISPLAY METHODS
+    # =============================================================================
     def _show_point_info(self, point_idx):
         """포인트 정보 표시"""
         if self.logit_data is None:
@@ -691,6 +760,9 @@ class LogitPlotDialog(QDialog):
         except Exception as e:
             print(f"이미지 표시 오류: {str(e)}")
             
+    # =============================================================================
+    # EXPLAINER METHODS
+    # =============================================================================
     def _add_explainer(self):
         """Explainer 추가"""
         # 클래스 맵을 딕셔너리로 변환
@@ -881,6 +953,9 @@ class LogitPlotDialog(QDialog):
         self.explainer_combo.setEnabled(True)
 
 
+# =============================================================================
+# UTILITY FUNCTIONS
+# =============================================================================
 def show_logit_plot_dialog(model, config, explainer_config, parent=None):
     """2D 로짓 플롯 다이얼로그 표시"""
     dialog = LogitPlotDialog(model, config, explainer_config, parent)
